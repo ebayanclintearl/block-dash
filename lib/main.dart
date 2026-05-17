@@ -40,7 +40,7 @@ class BlockDashApp extends StatelessWidget {
 
 // ─── Colour Palette ────────────────────────────────────────────────────────────
 class BlockDashColors {
-  // Background blues (Block-Blast bright palette)
+  // Background blues
   static const bgTop = Color(0xFF1255CC);
   static const bgMid = Color(0xFF1A6AD8);
   static const bgBottom = Color(0xFF3A9AEF);
@@ -68,13 +68,24 @@ class BlockDashColors {
   static const blockOrange = Color(0xFFFF7030);
   static const blockBlue = Color(0xFF2080FF);
 
-  // Pre-baked semi-transparent tones (avoids withValues in hot paths)
+  // Pre-baked semi-transparent tones
   static const shadow18 = Color(0x2D000000);
   static const shadow28 = Color(0x47000000);
   static const shadow45 = Color(0x73000000);
   static const white12 = Color(0x1FFFFFFF);
   static const white30 = Color(0x4DFFFFFF);
   static const white55 = Color(0x8CFFFFFF);
+
+  // Rainbow trail palette (subtle, desaturated slightly so they don't overpower)
+  static const List<Color> trailRainbow = [
+    Color(0xFF3A8CFF), // blue
+    Color(0xFF10C8F0), // cyan
+    Color(0xFF38C048), // green
+    Color(0xFFE8C000), // yellow
+    Color(0xFFFF6828), // orange
+    Color(0xFFB050EE), // purple
+    Color(0xFFE83050), // red-pink
+  ];
 }
 
 // ─── Home Screen ───────────────────────────────────────────────────────────────
@@ -92,20 +103,19 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(flex: 2),
-              // Decorative floating blocks
               const _HomeBlocks(),
               const SizedBox(height: 12),
-              // Title
               const _BlockTitle(text: 'BLOCK\nDASH'),
               const SizedBox(height: 16),
               _SubTag(text: 'STACK · DODGE · WIN'),
               const Spacer(flex: 2),
-              // PLAY button
+              // PLAY button — orange pill matching Block Blast style
               _BigButton(
                 label: 'PLAY',
                 icon: Icons.play_arrow_rounded,
-                color: BlockDashColors.orange,
-                accentColor: const Color(0xFFFFE766),
+                color: const Color(0xFFFF8C00),
+                accentColor: const Color(0xFFFFD000),
+                shadowColor: const Color(0xAAFF6000),
                 tall: true,
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
@@ -114,12 +124,13 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // SETTINGS button
+              // SETTINGS button — green pill
               _BigButton(
                 label: 'SETTINGS',
                 icon: Icons.settings_rounded,
-                color: BlockDashColors.blue,
-                accentColor: BlockDashColors.cyan,
+                color: const Color(0xFF2DBD44),
+                accentColor: const Color(0xFF52E868),
+                shadowColor: const Color(0xAA1A8830),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Settings coming soon!')),
@@ -228,9 +239,9 @@ class _SubTag extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
+      child: const Text(
+        'STACK · DODGE · WIN',
+        style: TextStyle(
           color: Colors.white,
           fontSize: 15,
           fontWeight: FontWeight.w800,
@@ -241,13 +252,14 @@ class _SubTag extends StatelessWidget {
   }
 }
 
-// ─── Shared Big Button ─────────────────────────────────────────────────────────
+// ─── Shared Big Button — Block Blast pill style ────────────────────────────────
 class _BigButton extends StatelessWidget {
   const _BigButton({
     required this.label,
     required this.icon,
     required this.color,
     required this.accentColor,
+    required this.shadowColor,
     required this.onPressed,
     this.tall = false,
   });
@@ -256,98 +268,128 @@ class _BigButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final Color accentColor;
+  final Color shadowColor;
   final VoidCallback onPressed;
   final bool tall;
 
   @override
   Widget build(BuildContext context) {
-    final h = tall ? 88.0 : 72.0;
-    // Derive a darker shade for the gradient bottom
+    final h = tall ? 84.0 : 68.0;
+    // Darker bottom shade for 3-D depth
     final darkColor = Color.fromARGB(
       255,
-      (color.red * 0.62).round(),
-      (color.green * 0.62).round(),
-      (color.blue * 0.62).round(),
+      (color.red * 0.68).round(),
+      (color.green * 0.68).round(),
+      (color.blue * 0.68).round(),
     );
+
     return SizedBox(
       width: double.infinity,
-      height: h,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: onPressed,
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [accentColor, color, darkColor],
-                stops: const [0, 0.45, 1],
+      height: h + 6, // extra for bottom-face depth
+      child: Stack(
+        children: [
+          // Bottom-face depth (3-D pill illusion)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: h,
+              decoration: BoxDecoration(
+                color: darkColor,
+                borderRadius: BorderRadius.circular(h / 2),
               ),
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Color.fromARGB(
-                    130,
-                    color.red,
-                    color.green,
-                    color.blue,
-                  ),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-                const BoxShadow(
-                  color: Color(0x55000000),
-                  blurRadius: 8,
-                  offset: Offset(0, 8),
-                ),
-              ],
             ),
-            child: Stack(
-              children: [
-                // Top gloss strip
-                Positioned(
-                  top: 4,
-                  left: 16,
-                  right: 16,
-                  child: Container(
-                    height: h * 0.30,
+          ),
+          // Main button face (sits 4px above bottom)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SizedBox(
+              height: h,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(h / 2),
+                  onTap: onPressed,
+                  child: Ink(
                     decoration: BoxDecoration(
-                      color: BlockDashColors.white30,
-                      borderRadius: BorderRadius.circular(14),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [accentColor, color],
+                        stops: const [0.0, 1.0],
+                      ),
+                      borderRadius: BorderRadius.circular(h / 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: shadowColor,
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        // Top gloss strip — pill shaped
+                        Positioned(
+                          top: 5,
+                          left: h * 0.6,
+                          right: h * 0.6,
+                          child: Container(
+                            height: h * 0.28,
+                            decoration: BoxDecoration(
+                              color: BlockDashColors.white30,
+                              borderRadius: BorderRadius.circular(h),
+                            ),
+                          ),
+                        ),
+                        // Icon + Label
+                        Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                icon,
+                                size: tall ? 34 : 28,
+                                color: Colors.white,
+                                shadows: const [
+                                  Shadow(
+                                    offset: Offset(0, 2),
+                                    blurRadius: 4,
+                                    color: Color(0x66000000),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: tall ? 30 : 24,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                  shadows: const [
+                                    Shadow(
+                                      offset: Offset(0, 3),
+                                      blurRadius: 5,
+                                      color: Color(0x77000000),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                // Label row
-                Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, size: tall ? 36 : 30, color: Colors.white),
-                      const SizedBox(width: 10),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: tall ? 32 : 26,
-                          fontWeight: FontWeight.w900,
-                          shadows: const [
-                            Shadow(
-                              offset: Offset(0, 3),
-                              blurRadius: 6,
-                              color: Color(0x88000000),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -382,7 +424,7 @@ class _BlockTitle extends StatelessWidget {
   }
 }
 
-// ─── Blue Scaffold (shared background) ────────────────────────────────────────
+// ─── Blue Scaffold ─────────────────────────────────────────────────────────────
 class _BlueScaffold extends StatelessWidget {
   const _BlueScaffold({required this.child});
 
@@ -400,7 +442,6 @@ class _BlueScaffold extends StatelessWidget {
 }
 
 class _BgPainter extends CustomPainter {
-  // Static cache so the shader isn't recreated every build
   static Rect? _cachedRect;
   static Shader? _cachedShader;
 
@@ -421,7 +462,6 @@ class _BgPainter extends CustomPainter {
     }
     canvas.drawRect(rect, Paint()..shader = _cachedShader);
 
-    // Subtle dot grid
     final dotPaint = Paint()..color = const Color(0x15FFFFFF);
     for (var x = 20.0; x < size.width; x += 40) {
       for (var y = 20.0; y < size.height; y += 40) {
@@ -497,18 +537,22 @@ class _GameScreenState extends State<GameScreen> {
                   ],
                 ),
               ),
-              // HUD overlay
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Column(
-                    children: [
-                      _GameHud(game: _game),
-                      const SizedBox(height: 8),
-                      _TimerBar(game: _game),
-                      const SizedBox(height: 20),
-                      _ComboPopup(game: _game),
-                    ],
+              // HUD overlay — isolated repaint boundary so game canvas repaints
+              // don't cascade into Flutter widget tree
+              RepaintBoundary(
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Column(
+                      children: [
+                        _GameHud(game: _game),
+                        const SizedBox(height: 8),
+                        _TimerBar(game: _game),
+                        const SizedBox(height: 20),
+                        // FIX: fixed-height slot so layout never shifts
+                        _ComboPopup(game: _game),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -536,7 +580,6 @@ class GameOverScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(),
-              // "Game Over" title — styled like reference image
               Text(
                 'Game Over',
                 textAlign: TextAlign.center,
@@ -558,15 +601,15 @@ class GameOverScreen extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Score panel
               _ScorePanel(result: result),
               const Spacer(),
-              // Play Again
+              // Play Again — orange pill
               _BigButton(
                 label: 'PLAY AGAIN',
                 icon: Icons.replay_rounded,
-                color: BlockDashColors.green,
-                accentColor: const Color(0xFF80E880),
+                color: const Color(0xFFFF8C00),
+                accentColor: const Color(0xFFFFD000),
+                shadowColor: const Color(0xAAFF6000),
                 tall: true,
                 onPressed: () => Navigator.of(context).pushReplacement(
                   MaterialPageRoute<void>(
@@ -575,12 +618,13 @@ class GameOverScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              // Home
+              // Home — green pill
               _BigButton(
                 label: 'HOME',
                 icon: Icons.home_rounded,
-                color: BlockDashColors.blue,
-                accentColor: BlockDashColors.cyan,
+                color: const Color(0xFF2DBD44),
+                accentColor: const Color(0xFF52E868),
+                shadowColor: const Color(0xAA1A8830),
                 onPressed: () => Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute<void>(
                     builder: (_) => HomeScreen(prefs: prefs),
@@ -617,7 +661,6 @@ class _ScorePanel extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Current score
           const Text(
             'Score',
             style: TextStyle(
@@ -641,7 +684,6 @@ class _ScorePanel extends StatelessWidget {
           const SizedBox(height: 18),
           const Divider(height: 1, color: Color(0x30B0D8FF)),
           const SizedBox(height: 18),
-          // Best score
           const Text(
             'Best Score',
             style: TextStyle(
@@ -698,12 +740,10 @@ class _GameHud extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Crown + best score (top-left, like Block Blast)
         ValueListenableBuilder<int>(
           valueListenable: game.bestNotifier,
           builder: (_, best, _) => _CrownScore(value: best),
         ),
-        // Current score (centered, large)
         Expanded(
           child: ValueListenableBuilder<int>(
             valueListenable: game.scoreNotifier,
@@ -722,7 +762,6 @@ class _GameHud extends StatelessWidget {
             ),
           ),
         ),
-        // Spacer to balance crown on the left
         const SizedBox(width: 80),
       ],
     );
@@ -758,6 +797,7 @@ class _CrownScore extends StatelessWidget {
   }
 }
 
+// ─── Timer Bar — FIXED: DecoratedBox now has a sized child ────────────────────
 class _TimerBar extends StatelessWidget {
   const _TimerBar({required this.game});
 
@@ -805,6 +845,8 @@ class _TimerBar extends StatelessWidget {
                     ),
                   ],
                 ),
+                // FIX: without a sized child, DecoratedBox collapses to zero
+                child: const SizedBox.expand(),
               ),
             ),
           );
@@ -814,6 +856,7 @@ class _TimerBar extends StatelessWidget {
   }
 }
 
+// ─── Combo Popup — FIXED: fixed-height slot prevents layout thrash ─────────────
 class _ComboPopup extends StatelessWidget {
   const _ComboPopup({required this.game});
 
@@ -821,34 +864,48 @@ class _ComboPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: game.comboNotifier,
-      builder: (_, combo, _) {
-        if (combo < 3) return const SizedBox(height: 36);
-        return Container(
-          height: 36,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFE566), BlockDashColors.orange],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(color: Color(0x88FF9800), blurRadius: 14),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '${combo}x COMBO!',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              shadows: [Shadow(offset: Offset(0, 2), color: Color(0x88000000))],
-            ),
-          ),
-        );
-      },
+    // Always reserve the same 36px height; only show content when combo >= 3.
+    // This eliminates the layout recalculation that caused jank.
+    return SizedBox(
+      height: 36,
+      child: ValueListenableBuilder<int>(
+        valueListenable: game.comboNotifier,
+        builder: (_, combo, _) {
+          return AnimatedOpacity(
+            opacity: combo >= 3 ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 120),
+            child: combo >= 3
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFE566), BlockDashColors.orange],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x88FF9800), blurRadius: 14),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${combo}x COMBO!',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(0, 2),
+                            color: Color(0x88000000),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          );
+        },
+      ),
     );
   }
 }
@@ -978,16 +1035,14 @@ class BlockDashGame extends FlameGame {
   bool pendingDeath = false;
   double shakeTimeLeft = 0;
 
-  // ── Pre-baked paints (avoid allocation in hot paths) ──
+  // Pre-baked paints
   final _boardCellPaint = Paint()..color = BlockDashColors.boardCell;
   final _boardBorderPaint = Paint()
     ..color = const Color(0x202654BC)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1;
   final _trackPaint = Paint()..color = BlockDashColors.board;
-  final _trailPaint = Paint()..color = BlockDashColors.blockBlue;
 
-  // Background line paint
   final _bgLinePaint = Paint()
     ..color = const Color(0x0CFFFFFF)
     ..strokeWidth = 1;
@@ -1186,7 +1241,7 @@ class BlockDashGame extends FlameGame {
     super.render(canvas);
     _renderBackground(canvas);
     _renderBoard(canvas);
-    _renderGridPoints(canvas, trails, _trailPaint);
+    _renderTrails(canvas); // replaced _renderGridPoints for rainbow effect
     _renderHazards(canvas);
     _renderParticles(canvas);
     _renderPlayer(canvas);
@@ -1216,7 +1271,6 @@ class BlockDashGame extends FlameGame {
 
   void _renderBackground(Canvas canvas) {
     final full = Rect.fromLTWH(0, 0, size.x, size.y);
-    // Gradient bg
     canvas.drawRect(
       full,
       Paint()
@@ -1231,7 +1285,6 @@ class BlockDashGame extends FlameGame {
         ).createShader(full),
     );
 
-    // Sparse dot grid outside the board
     for (var x = 20.0; x < size.x; x += 48) {
       for (var y = 0.0; y < size.y; y += 48) {
         if (x < gridLeft || x > gridLeft + gridWidth) {
@@ -1240,11 +1293,9 @@ class BlockDashGame extends FlameGame {
       }
     }
 
-    // Board lane background
     final boardRect = Rect.fromLTWH(gridLeft, 0, gridWidth, size.y);
     canvas.drawRect(boardRect, _trackPaint);
 
-    // Subtle vertical lines inside board lane
     for (var x = gridLeft + 32; x < gridLeft + gridWidth; x += 32) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.y), _trackLinePaint);
     }
@@ -1273,11 +1324,22 @@ class BlockDashGame extends FlameGame {
     }
   }
 
-  void _renderGridPoints(Canvas canvas, Set<GridPoint> points, Paint paint) {
+  /// Renders trail blocks with a subtle rainbow cycle based on row index.
+  void _renderTrails(Canvas canvas) {
+    final palette = BlockDashColors.trailRainbow;
     final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
-    for (final point in points) {
+    for (final point in trails) {
       if (point.row < firstRow || point.row > lastRow) continue;
+      // Cycle through the palette by row; slightly muted alpha so trails
+      // don't overpower hazards or the player block.
+      final baseColor = palette[point.row % palette.length];
+      final muted = Color.fromARGB(
+        200,
+        baseColor.red,
+        baseColor.green,
+        baseColor.blue,
+      );
       _drawBlock(
         canvas,
         Rect.fromLTWH(
@@ -1286,7 +1348,7 @@ class BlockDashGame extends FlameGame {
           cellSize,
           cellSize,
         ),
-        paint.color,
+        muted,
       );
     }
   }
@@ -1326,7 +1388,7 @@ class BlockDashGame extends FlameGame {
     final radius = const Radius.circular(10);
     final rrect = RRect.fromRectAndRadius(rect, radius);
 
-    // 1. Drop shadow (offset down)
+    // 1. Drop shadow
     canvas.drawRRect(
       rrect.shift(const Offset(0, 5)),
       Paint()
@@ -1354,7 +1416,7 @@ class BlockDashGame extends FlameGame {
         ),
     );
 
-    // 3. Main face — gradient (lighter top, slightly darker bottom)
+    // 3. Main face — gradient
     final lightColor = Color.fromARGB(
       255,
       math.min(255, color.red + 40),
@@ -1371,7 +1433,7 @@ class BlockDashGame extends FlameGame {
         ).createShader(rect),
     );
 
-    // 4. Inner gloss highlight (top-left quadrant)
+    // 4. Gloss highlight
     final glossRect = Rect.fromLTWH(
       rect.left + rect.width * 0.12,
       rect.top + rect.height * 0.09,
@@ -1388,7 +1450,7 @@ class BlockDashGame extends FlameGame {
         ).createShader(glossRect),
     );
 
-    // 5. Subtle border
+    // 5. Border
     canvas.drawRRect(
       rrect,
       Paint()
