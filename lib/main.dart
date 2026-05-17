@@ -27,7 +27,7 @@ class BlockDashApp extends StatelessWidget {
       theme: ThemeData(
         brightness: Brightness.dark,
         fontFamily: 'Arial',
-        scaffoldBackgroundColor: BlockDashColors.midnight,
+        scaffoldBackgroundColor: BlockDashColors.bgTop,
         colorScheme: ColorScheme.fromSeed(
           seedColor: BlockDashColors.cyan,
           brightness: Brightness.dark,
@@ -38,18 +38,46 @@ class BlockDashApp extends StatelessWidget {
   }
 }
 
+// ─── Colour Palette ────────────────────────────────────────────────────────────
 class BlockDashColors {
-  static const midnight = Color(0xFF020A27);
-  static const panel = Color(0xFF0A33B8);
-  static const panelDark = Color(0xFF061756);
-  static const cyan = Color(0xFF28D8F4);
-  static const blue = Color(0xFF1D60F0);
-  static const yellow = Color(0xFFFFD83A);
-  static const orange = Color(0xFFFF9F13);
-  static const red = Color(0xFFFF5147);
-  static const green = Color(0xFF2EE35B);
+  // Background blues (Block-Blast bright palette)
+  static const bgTop = Color(0xFF1255CC);
+  static const bgMid = Color(0xFF1A6AD8);
+  static const bgBottom = Color(0xFF3A9AEF);
+
+  // Board / grid
+  static const board = Color(0xFF183080);
+  static const boardCell = Color(0xFF1C3A96);
+  static const boardBorder = Color(0xFF2654BC);
+
+  // Accent / UI
+  static const cyan = Color(0xFF00C8F0);
+  static const blue = Color(0xFF1E72E8);
+  static const yellow = Color(0xFFFFD600);
+  static const orange = Color(0xFFFF9800);
+  static const red = Color(0xFFEF3030);
+  static const green = Color(0xFF43C447);
+  static const purple = Color(0xFF9C3FD8);
+
+  // Block colours (glossy set)
+  static const blockCyan = Color(0xFF14C8F0);
+  static const blockRed = Color(0xFFEF3030);
+  static const blockGreen = Color(0xFF30C050);
+  static const blockYellow = Color(0xFFFFCC00);
+  static const blockPurple = Color(0xFF9B3FE0);
+  static const blockOrange = Color(0xFFFF7030);
+  static const blockBlue = Color(0xFF2080FF);
+
+  // Pre-baked semi-transparent tones (avoids withValues in hot paths)
+  static const shadow18 = Color(0x2D000000);
+  static const shadow28 = Color(0x47000000);
+  static const shadow45 = Color(0x73000000);
+  static const white12 = Color(0x1FFFFFFF);
+  static const white30 = Color(0x4DFFFFFF);
+  static const white55 = Color(0x8CFFFFFF);
 }
 
+// ─── Home Screen ───────────────────────────────────────────────────────────────
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.prefs});
 
@@ -57,59 +85,48 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NeonScaffold(
+    return _BlueScaffold(
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-          child: Stack(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+          child: Column(
             children: [
-              const FloatingBlock(
-                alignment: Alignment(-0.86, -0.78),
-                red: true,
-              ),
-              const FloatingBlock(alignment: Alignment(0.82, 0.78)),
-              const FloatingBlock(alignment: Alignment(-0.82, 0.84), red: true),
-              Column(
-                children: [
-                  const Spacer(flex: 2),
-                  const BlockTitle(text: 'BLOCK\nDASH'),
-                  const SizedBox(height: 20),
-                  NeonTag(text: 'STACK, DODGE, AND WIN!'),
-                  const Spacer(flex: 2),
-                  ArcadeButton(
-                    label: 'PLAY',
-                    icon: Icons.play_arrow_rounded,
-                    color: BlockDashColors.orange,
-                    tall: true,
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => GameScreen(prefs: prefs),
-                        ),
-                      );
-                    },
+              const Spacer(flex: 2),
+              // Decorative floating blocks
+              const _HomeBlocks(),
+              const SizedBox(height: 12),
+              // Title
+              const _BlockTitle(text: 'BLOCK\nDASH'),
+              const SizedBox(height: 16),
+              _SubTag(text: 'STACK · DODGE · WIN'),
+              const Spacer(flex: 2),
+              // PLAY button
+              _BigButton(
+                label: 'PLAY',
+                icon: Icons.play_arrow_rounded,
+                color: BlockDashColors.orange,
+                accentColor: const Color(0xFFFFE766),
+                tall: true,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => GameScreen(prefs: prefs),
                   ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SquareMenuButton(
-                          label: 'SETTINGS',
-                          icon: Icons.settings_rounded,
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Settings placeholder'),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                ],
+                ),
               ),
+              const SizedBox(height: 16),
+              // SETTINGS button
+              _BigButton(
+                label: 'SETTINGS',
+                icon: Icons.settings_rounded,
+                color: BlockDashColors.blue,
+                accentColor: BlockDashColors.cyan,
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Settings coming soon!')),
+                  );
+                },
+              ),
+              const Spacer(),
             ],
           ),
         ),
@@ -118,52 +135,75 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class FloatingBlock extends StatelessWidget {
-  const FloatingBlock({super.key, required this.alignment, this.red = false});
-
-  final Alignment alignment;
-  final bool red;
+class _HomeBlocks extends StatelessWidget {
+  const _HomeBlocks();
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: alignment,
-      child: Transform.rotate(
-        angle: red ? -0.28 : 0.24,
-        child: Container(
-          width: 68,
-          height: 68,
-          decoration: BoxDecoration(
-            color: red ? BlockDashColors.red : BlockDashColors.cyan,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.35),
-              width: 3,
+    return SizedBox(
+      height: 80,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            left: 20,
+            child: Transform.rotate(
+              angle: -0.22,
+              child: _MiniBlock(color: BlockDashColors.blockRed, size: 60),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: (red ? BlockDashColors.red : BlockDashColors.cyan)
-                    .withValues(alpha: 0.48),
-                blurRadius: 20,
-              ),
-              const BoxShadow(
-                color: Color(0xAA001343),
-                blurRadius: 10,
-                offset: Offset(0, 8),
-              ),
-            ],
           ),
-          child: Align(
-            alignment: Alignment.topLeft,
-            child: Container(
-              width: 38,
-              height: 38,
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(8),
-              ),
+          Positioned(
+            right: 20,
+            child: Transform.rotate(
+              angle: 0.18,
+              child: _MiniBlock(color: BlockDashColors.blockGreen, size: 55),
             ),
+          ),
+          Transform.rotate(
+            angle: 0.0,
+            child: _MiniBlock(color: BlockDashColors.blockYellow, size: 52),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniBlock extends StatelessWidget {
+  const _MiniBlock({required this.color, this.size = 56});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(size * 0.18),
+        boxShadow: [
+          BoxShadow(
+            color: Color.fromARGB(100, color.red, color.green, color.blue),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+          const BoxShadow(
+            color: Color(0x50000000),
+            blurRadius: 6,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Align(
+        alignment: const Alignment(-0.5, -0.5),
+        child: Container(
+          width: size * 0.55,
+          height: size * 0.28,
+          decoration: BoxDecoration(
+            color: BlockDashColors.white55,
+            borderRadius: BorderRadius.circular(size * 0.12),
           ),
         ),
       ),
@@ -171,92 +211,230 @@ class FloatingBlock extends StatelessWidget {
   }
 }
 
-class NeonTag extends StatelessWidget {
-  const NeonTag({super.key, required this.text});
+class _SubTag extends StatelessWidget {
+  const _SubTag({required this.text});
 
   final String text;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
       decoration: BoxDecoration(
-        color: const Color(0xFF082680),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: BlockDashColors.blue, width: 3),
-        boxShadow: const [BoxShadow(color: Color(0x6628D8F4), blurRadius: 14)],
+        color: const Color(0x401E72E8),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: BlockDashColors.cyan.withValues(alpha: 0.55),
+          width: 2,
+        ),
       ),
       child: Text(
         text,
-        textAlign: TextAlign.center,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 17,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0,
-          shadows: [Shadow(offset: Offset(0, 3), color: Color(0xAA001343))],
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.5,
         ),
       ),
     );
   }
 }
 
-class SquareMenuButton extends StatelessWidget {
-  const SquareMenuButton({
-    super.key,
+// ─── Shared Big Button ─────────────────────────────────────────────────────────
+class _BigButton extends StatelessWidget {
+  const _BigButton({
     required this.label,
     required this.icon,
+    required this.color,
+    required this.accentColor,
     required this.onPressed,
+    this.tall = false,
   });
 
   final String label;
   final IconData icon;
+  final Color color;
+  final Color accentColor;
   final VoidCallback onPressed;
+  final bool tall;
 
   @override
   Widget build(BuildContext context) {
+    final h = tall ? 88.0 : 72.0;
+    // Derive a darker shade for the gradient bottom
+    final darkColor = Color.fromARGB(
+      255,
+      (color.red * 0.62).round(),
+      (color.green * 0.62).round(),
+      (color.blue * 0.62).round(),
+    );
     return SizedBox(
-      height: 142,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          backgroundColor: BlockDashColors.panel,
-          foregroundColor: Colors.white,
-          elevation: 12,
-          shadowColor: Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: const BorderSide(color: BlockDashColors.cyan, width: 3),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 58, color: BlockDashColors.cyan),
-            const SizedBox(height: 14),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                maxLines: 1,
-                style: const TextStyle(
-                  fontSize: 27,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                  shadows: [
-                    Shadow(offset: Offset(0, 3), color: Color(0xAA001343)),
-                  ],
-                ),
+      width: double.infinity,
+      height: h,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: onPressed,
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [accentColor, color, darkColor],
+                stops: const [0, 0.45, 1],
               ),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Color.fromARGB(
+                    130,
+                    color.red,
+                    color.green,
+                    color.blue,
+                  ),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+                const BoxShadow(
+                  color: Color(0x55000000),
+                  blurRadius: 8,
+                  offset: Offset(0, 8),
+                ),
+              ],
             ),
-          ],
+            child: Stack(
+              children: [
+                // Top gloss strip
+                Positioned(
+                  top: 4,
+                  left: 16,
+                  right: 16,
+                  child: Container(
+                    height: h * 0.30,
+                    decoration: BoxDecoration(
+                      color: BlockDashColors.white30,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+                // Label row
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: tall ? 36 : 30, color: Colors.white),
+                      const SizedBox(width: 10),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: tall ? 32 : 26,
+                          fontWeight: FontWeight.w900,
+                          shadows: const [
+                            Shadow(
+                              offset: Offset(0, 3),
+                              blurRadius: 6,
+                              color: Color(0x88000000),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
+// ─── Block Title ───────────────────────────────────────────────────────────────
+class _BlockTitle extends StatelessWidget {
+  const _BlockTitle({required this.text, this.danger = false});
+
+  final String text;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final shortest = MediaQuery.sizeOf(context).shortestSide;
+    final fontSize = (shortest * 0.17).clamp(48.0, 84.0);
+    return Text(
+      text,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        height: 0.9,
+        fontSize: fontSize,
+        fontWeight: FontWeight.w900,
+        letterSpacing: -1,
+        color: danger ? BlockDashColors.red : BlockDashColors.yellow,
+        shadows: const [
+          Shadow(offset: Offset(0, 5), blurRadius: 0, color: Color(0xAA000000)),
+          Shadow(blurRadius: 20, color: Color(0x882080FF)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Blue Scaffold (shared background) ────────────────────────────────────────
+class _BlueScaffold extends StatelessWidget {
+  const _BlueScaffold({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomPaint(
+        painter: _BgPainter(),
+        child: SizedBox.expand(child: child),
+      ),
+    );
+  }
+}
+
+class _BgPainter extends CustomPainter {
+  // Static cache so the shader isn't recreated every build
+  static Rect? _cachedRect;
+  static Shader? _cachedShader;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    if (_cachedRect != rect) {
+      _cachedRect = rect;
+      _cachedShader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          BlockDashColors.bgTop,
+          BlockDashColors.bgMid,
+          BlockDashColors.bgBottom,
+        ],
+      ).createShader(rect);
+    }
+    canvas.drawRect(rect, Paint()..shader = _cachedShader);
+
+    // Subtle dot grid
+    final dotPaint = Paint()..color = const Color(0x15FFFFFF);
+    for (var x = 20.0; x < size.width; x += 40) {
+      for (var y = 20.0; y < size.height; y += 40) {
+        canvas.drawCircle(Offset(x, y), 1.5, dotPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ─── Game Screen ───────────────────────────────────────────────────────────────
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key, required this.prefs});
 
@@ -298,7 +476,9 @@ class _GameScreenState extends State<GameScreen> {
           },
           child: Stack(
             children: [
+              // Flame game
               GameWidget(game: _game),
+              // Tap zones
               Positioned.fill(
                 child: Row(
                   children: [
@@ -317,15 +497,16 @@ class _GameScreenState extends State<GameScreen> {
                   ],
                 ),
               ),
+              // HUD overlay
               SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Column(
                     children: [
                       _GameHud(game: _game),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       _TimerBar(game: _game),
-                      const SizedBox(height: 26),
+                      const SizedBox(height: 20),
                       _ComboPopup(game: _game),
                     ],
                   ),
@@ -339,6 +520,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 }
 
+// ─── Game Over Screen ──────────────────────────────────────────────────────────
 class GameOverScreen extends StatelessWidget {
   const GameOverScreen({super.key, required this.prefs, required this.result});
 
@@ -347,72 +529,66 @@ class GameOverScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NeonScaffold(
+    return _BlueScaffold(
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
-          child: Stack(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Column(
             children: [
-              const FloatingBlock(
-                alignment: Alignment(-0.86, -0.78),
-                red: true,
-              ),
-              const FloatingBlock(alignment: Alignment(0.82, 0.74)),
-              Column(
-                children: [
-                  const Spacer(),
-                  const BlockTitle(text: 'GAME\nOVER', danger: true),
-                  const SizedBox(height: 22),
-                  NeonPanel(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ScoreLine(label: 'SCORE', value: result.score),
-                        const Divider(height: 30, color: Color(0x4428D8F4)),
-                        ScoreLine(label: 'BEST SCORE', value: result.bestScore),
-                        if (result.isNewBest) ...[
-                          const SizedBox(height: 18),
-                          const Text(
-                            'NEW HIGH SCORE!',
-                            style: TextStyle(
-                              color: BlockDashColors.yellow,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ],
+              const Spacer(),
+              // "Game Over" title — styled like reference image
+              Text(
+                'Game Over',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 54,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFFB0D8FF),
+                  shadows: [
+                    const Shadow(
+                      offset: Offset(0, 4),
+                      blurRadius: 0,
+                      color: Color(0x88000E6A),
                     ),
-                  ),
-                  const Spacer(),
-                  ArcadeButton(
-                    label: 'PLAY AGAIN',
-                    icon: Icons.replay_rounded,
-                    color: BlockDashColors.orange,
-                    onPressed: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute<void>(
-                          builder: (_) => GameScreen(prefs: prefs),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  ArcadeButton(
-                    label: 'HOME',
-                    icon: Icons.home_rounded,
-                    color: BlockDashColors.blue,
-                    onPressed: () {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute<void>(
-                          builder: (_) => HomeScreen(prefs: prefs),
-                        ),
-                        (_) => false,
-                      );
-                    },
-                  ),
-                ],
+                    Shadow(
+                      blurRadius: 20,
+                      color: BlockDashColors.cyan.withValues(alpha: 0.4),
+                    ),
+                  ],
+                ),
               ),
+              const Spacer(),
+              // Score panel
+              _ScorePanel(result: result),
+              const Spacer(),
+              // Play Again
+              _BigButton(
+                label: 'PLAY AGAIN',
+                icon: Icons.replay_rounded,
+                color: BlockDashColors.green,
+                accentColor: const Color(0xFF80E880),
+                tall: true,
+                onPressed: () => Navigator.of(context).pushReplacement(
+                  MaterialPageRoute<void>(
+                    builder: (_) => GameScreen(prefs: prefs),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              // Home
+              _BigButton(
+                label: 'HOME',
+                icon: Icons.home_rounded,
+                color: BlockDashColors.blue,
+                accentColor: BlockDashColors.cyan,
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute<void>(
+                    builder: (_) => HomeScreen(prefs: prefs),
+                  ),
+                  (_) => false,
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -421,205 +597,98 @@ class GameOverScreen extends StatelessWidget {
   }
 }
 
-class NeonScaffold extends StatelessWidget {
-  const NeonScaffold({super.key, required this.child});
+class _ScorePanel extends StatelessWidget {
+  const _ScorePanel({required this.result});
 
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomPaint(
-        painter: GridBackgroundPainter(),
-        child: SizedBox.expand(child: child),
-      ),
-    );
-  }
-}
-
-class BlockTitle extends StatelessWidget {
-  const BlockTitle({super.key, required this.text, this.danger = false});
-
-  final String text;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final shortest = MediaQuery.sizeOf(context).shortestSide;
-    final fontSize = (shortest * 0.18).clamp(52.0, 86.0);
-
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          height: 0.88,
-          fontSize: fontSize,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0,
-          color: danger ? BlockDashColors.red : BlockDashColors.yellow,
-          shadows: const [
-            Shadow(offset: Offset(0, 5), color: Color(0xAA001343)),
-            Shadow(blurRadius: 18, color: BlockDashColors.cyan),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ArcadeButton extends StatelessWidget {
-  const ArcadeButton({
-    super.key,
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onPressed,
-    this.tall = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onPressed;
-  final bool tall;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: tall ? 92 : 76,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onPressed,
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: color == BlockDashColors.orange
-                    ? const [
-                        Color(0xFFFFE564),
-                        Color(0xFFFFBA1E),
-                        Color(0xFFE86900),
-                      ]
-                    : const [
-                        Color(0xFF1B73FF),
-                        BlockDashColors.blue,
-                        Color(0xFF0B2B92),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: color == BlockDashColors.orange
-                    ? const Color(0xFFFFE985)
-                    : BlockDashColors.cyan,
-                width: 3,
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0xAA001343),
-                  offset: Offset(0, 9),
-                  blurRadius: 18,
-                ),
-                BoxShadow(color: Color(0x7728D8F4), blurRadius: 22),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 34, color: Colors.white),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 34,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(0, 4),
-                            color: Color(0xAA8A3600),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class NeonPanel extends StatelessWidget {
-  const NeonPanel({super.key, required this.child});
-
-  final Widget child;
+  final GameResult result;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
       decoration: BoxDecoration(
-        color: BlockDashColors.panel,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: BlockDashColors.cyan, width: 3),
-        boxShadow: const [
-          BoxShadow(color: Color(0x7728D8F4), blurRadius: 22, spreadRadius: 1),
+        color: const Color(0x40183080),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: BlockDashColors.cyan.withValues(alpha: 0.35),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          // Current score
+          const Text(
+            'Score',
+            style: TextStyle(
+              color: Color(0xAAB0D8FF),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${result.score}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 72,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              shadows: [Shadow(offset: Offset(0, 4), color: Color(0x88000000))],
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Divider(height: 1, color: Color(0x30B0D8FF)),
+          const SizedBox(height: 18),
+          // Best score
+          const Text(
+            'Best Score',
+            style: TextStyle(
+              color: Color(0xAAB0D8FF),
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${result.bestScore}',
+            style: const TextStyle(
+              color: BlockDashColors.yellow,
+              fontSize: 48,
+              height: 1,
+              fontWeight: FontWeight.w900,
+              shadows: [Shadow(offset: Offset(0, 3), color: Color(0x88000000))],
+            ),
+          ),
+          if (result.isNewBest) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFE564), BlockDashColors.orange],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                '🏆  NEW HIGH SCORE!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
-      child: child,
     );
   }
 }
 
-class ScoreLine extends StatelessWidget {
-  const ScoreLine({super.key, required this.label, required this.value});
-
-  final String label;
-  final int value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '$value',
-          style: const TextStyle(
-            color: BlockDashColors.yellow,
-            fontSize: 60,
-            height: 1,
-            fontWeight: FontWeight.w900,
-            shadows: [Shadow(offset: Offset(0, 4), color: Color(0xAA5B2C00))],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
+// ─── HUD Widgets ───────────────────────────────────────────────────────────────
 class _GameHud extends StatelessWidget {
   const _GameHud({required this.game});
 
@@ -627,66 +696,61 @@ class _GameHud extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        decoration: BoxDecoration(
-          color: BlockDashColors.panel,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xAA74A4FF), width: 2),
+    return Row(
+      children: [
+        // Crown + best score (top-left, like Block Blast)
+        ValueListenableBuilder<int>(
+          valueListenable: game.bestNotifier,
+          builder: (_, best, _) => _CrownScore(value: best),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ValueListenableBuilder<int>(
-              valueListenable: game.scoreNotifier,
-              builder: (_, score, _) =>
-                  HudStat(label: 'SCORE', value: score, highlight: true),
+        // Current score (centered, large)
+        Expanded(
+          child: ValueListenableBuilder<int>(
+            valueListenable: game.scoreNotifier,
+            builder: (_, score, _) => Text(
+              '$score',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 42,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                shadows: [
+                  Shadow(offset: Offset(0, 3), color: Color(0x88000000)),
+                ],
+              ),
             ),
-            const SizedBox(width: 24),
-            ValueListenableBuilder<int>(
-              valueListenable: game.bestNotifier,
-              builder: (_, best, _) => HudStat(label: 'BEST', value: best),
-            ),
-          ],
+          ),
         ),
-      ),
+        // Spacer to balance crown on the left
+        const SizedBox(width: 80),
+      ],
     );
   }
 }
 
-class HudStat extends StatelessWidget {
-  const HudStat({
-    super.key,
-    required this.label,
-    required this.value,
-    this.highlight = false,
-  });
+class _CrownScore extends StatelessWidget {
+  const _CrownScore({required this.value});
 
-  final String label;
   final int value;
-  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: Colors.white.withValues(alpha: 0.78),
-          ),
+        const Icon(
+          Icons.emoji_events_rounded,
+          color: BlockDashColors.yellow,
+          size: 22,
         ),
+        const SizedBox(width: 5),
         Text(
           '$value',
-          style: TextStyle(
-            fontSize: 20,
-            height: 1.05,
-            fontWeight: FontWeight.w900,
-            color: highlight ? BlockDashColors.yellow : Colors.white,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
@@ -701,48 +765,51 @@ class _TimerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<double>(
-      valueListenable: game.timerNotifier,
-      builder: (_, value, _) {
-        final colors = value <= 0.25
-            ? const [BlockDashColors.red, Color(0xFFEE261E)]
-            : value <= 0.5
-            ? const [BlockDashColors.yellow, BlockDashColors.orange]
-            : const [BlockDashColors.green, BlockDashColors.yellow];
-        return Container(
-          width: 200,
-          height: 12,
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: const Color(0x990B1C7A),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0x9974A4FF), width: 2),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x66000000),
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          alignment: Alignment.centerLeft,
-          child: FractionallySizedBox(
-            widthFactor: value.clamp(0, 1),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: colors),
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.first.withValues(alpha: 0.6),
-                    blurRadius: value <= 0.25 ? 18 : 12,
-                  ),
-                ],
+    return Center(
+      child: ValueListenableBuilder<double>(
+        valueListenable: game.timerNotifier,
+        builder: (_, value, _) {
+          final List<Color> colors;
+          if (value <= 0.25) {
+            colors = const [BlockDashColors.red, Color(0xFFFF6060)];
+          } else if (value <= 0.5) {
+            colors = const [BlockDashColors.yellow, BlockDashColors.orange];
+          } else {
+            colors = const [BlockDashColors.green, Color(0xFF80E880)];
+          }
+          return Container(
+            width: 200,
+            height: 14,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0x66183080),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0x552654BC), width: 2),
+            ),
+            alignment: Alignment.centerLeft,
+            child: FractionallySizedBox(
+              widthFactor: value.clamp(0.0, 1.0),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: colors),
+                  borderRadius: BorderRadius.circular(7),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color.fromARGB(
+                        120,
+                        colors.first.red,
+                        colors.first.green,
+                        colors.first.blue,
+                      ),
+                      blurRadius: value <= 0.25 ? 14 : 8,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -757,20 +824,17 @@ class _ComboPopup extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: game.comboNotifier,
       builder: (_, combo, _) {
-        if (combo < 3) return const SizedBox(height: 38);
+        if (combo < 3) return const SizedBox(height: 36);
         return Container(
-          height: 38,
+          height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [BlockDashColors.yellow, BlockDashColors.orange],
+              colors: [Color(0xFFFFE566), BlockDashColors.orange],
             ),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(18),
             boxShadow: const [
-              BoxShadow(color: Color(0xAAFF8C00), blurRadius: 15),
-              BoxShadow(color: Color(0xAA001343), offset: Offset(0, 5)),
+              BoxShadow(color: Color(0x88FF9800), blurRadius: 14),
             ],
           ),
           alignment: Alignment.center,
@@ -778,9 +842,9 @@ class _ComboPopup extends StatelessWidget {
             '${combo}x COMBO!',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.w900,
-              shadows: [Shadow(offset: Offset(0, 2), color: Color(0x99000000))],
+              shadows: [Shadow(offset: Offset(0, 2), color: Color(0x88000000))],
             ),
           ),
         );
@@ -789,19 +853,16 @@ class _ComboPopup extends StatelessWidget {
   }
 }
 
+// ─── Game Enums / Models ───────────────────────────────────────────────────────
 enum Direction { left, right }
 
 class GridPoint {
   const GridPoint(this.col, this.row);
-
   final int col;
   final int row;
-
   @override
-  bool operator ==(Object other) {
-    return other is GridPoint && other.col == col && other.row == row;
-  }
-
+  bool operator ==(Object other) =>
+      other is GridPoint && other.col == col && other.row == row;
   @override
   int get hashCode => Object.hash(col, row);
 }
@@ -812,7 +873,6 @@ class Particle {
     required this.velocity,
     required this.color,
   });
-
   Offset position;
   final Offset velocity;
   final Color color;
@@ -822,7 +882,6 @@ class Particle {
 
 class ScorePopup {
   ScorePopup({required this.position, required this.points});
-
   Offset position;
   final int points;
   double age = 0;
@@ -835,12 +894,12 @@ class GameResult {
     required this.bestScore,
     required this.isNewBest,
   });
-
   final int score;
   final int bestScore;
   final bool isNewBest;
 }
 
+// ─── Flame Game ────────────────────────────────────────────────────────────────
 class BlockDashGame extends FlameGame {
   BlockDashGame({required this.prefs, required this.onGameOver})
     : bestScore = prefs.getInt(_bestScoreKey) ?? 0 {
@@ -861,8 +920,6 @@ class BlockDashGame extends FlameGame {
   static const maxTimerDrain = 62.0;
   static const timerRefill = 35.0;
   static const comboTimeout = 1.5;
-
-  // Coins are intentionally dormant: retained as data-path capacity only.
   static const coinsActive = false;
 
   final SharedPreferences prefs;
@@ -893,6 +950,7 @@ class BlockDashGame extends FlameGame {
   late int nextHazardRow;
   int? lastHazardSide;
   int? secondLastHazardSide;
+
   int score = 0;
   int bestScore;
   int comboCount = 0;
@@ -920,14 +978,25 @@ class BlockDashGame extends FlameGame {
   bool pendingDeath = false;
   double shakeTimeLeft = 0;
 
-  final boardPaint = Paint()..color = const Color(0xFF101C4A);
-  final trackPaint = Paint()..color = const Color(0xFF0B1647);
-  final trailPaint = Paint()..color = BlockDashColors.blue;
-  final playerPaint = Paint()..color = const Color(0xFF23C7EB);
-  final hazardPaint = Paint()..color = BlockDashColors.red;
+  // ── Pre-baked paints (avoid allocation in hot paths) ──
+  final _boardCellPaint = Paint()..color = BlockDashColors.boardCell;
+  final _boardBorderPaint = Paint()
+    ..color = const Color(0x202654BC)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
+  final _trackPaint = Paint()..color = BlockDashColors.board;
+  final _trailPaint = Paint()..color = BlockDashColors.blockBlue;
+
+  // Background line paint
+  final _bgLinePaint = Paint()
+    ..color = const Color(0x0CFFFFFF)
+    ..strokeWidth = 1;
+  final _trackLinePaint = Paint()
+    ..color = const Color(0x142654BC)
+    ..strokeWidth = 1;
 
   @override
-  Color backgroundColor() => BlockDashColors.midnight;
+  Color backgroundColor() => BlockDashColors.bgTop;
 
   @override
   Future<void> onLoad() async {
@@ -946,9 +1015,7 @@ class BlockDashGame extends FlameGame {
     if (size.x <= 0 || size.y <= 0) return;
     _computeLayout();
     if (isLoaded) {
-      if (!isMoving) {
-        playerScreenY = size.y - cellSize - 20;
-      }
+      if (!isMoving) playerScreenY = size.y - cellSize - 20;
       worldScrollY = _rowToY(playerRow) - playerScreenY;
     }
   }
@@ -1110,7 +1177,6 @@ class BlockDashGame extends FlameGame {
         ),
       );
       _updateDifficulty();
-
       if (pendingDeath) _triggerDeath();
     }
   }
@@ -1120,8 +1186,8 @@ class BlockDashGame extends FlameGame {
     super.render(canvas);
     _renderBackground(canvas);
     _renderBoard(canvas);
-    _renderGridPoints(canvas, trails, trailPaint);
-    _renderGridPoints(canvas, hazards, hazardPaint);
+    _renderGridPoints(canvas, trails, _trailPaint);
+    _renderHazards(canvas);
     _renderParticles(canvas);
     _renderPlayer(canvas);
     _renderScorePopups(canvas);
@@ -1146,56 +1212,41 @@ class BlockDashGame extends FlameGame {
     return 1 - math.pow(-2 * t + 2, 3).toDouble() / 2;
   }
 
+  // ── Rendering ──────────────────────────────────────────────────────────────
+
   void _renderBackground(Canvas canvas) {
     final full = Rect.fromLTWH(0, 0, size.x, size.y);
+    // Gradient bg
     canvas.drawRect(
       full,
       Paint()
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF3422B8), Color(0xFF2F57D4), Color(0xFF2368DF)],
+          colors: [
+            BlockDashColors.bgTop,
+            BlockDashColors.bgMid,
+            BlockDashColors.bgBottom,
+          ],
         ).createShader(full),
     );
 
-    final bgLinePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.05)
-      ..strokeWidth = 1;
-    for (var x = 0.0; x < size.x; x += 64) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.y), bgLinePaint);
-    }
-    for (var y = 0.0; y < size.y; y += 64) {
-      canvas.drawLine(Offset(0, y), Offset(size.x, y), bgLinePaint);
+    // Sparse dot grid outside the board
+    for (var x = 20.0; x < size.x; x += 48) {
+      for (var y = 0.0; y < size.y; y += 48) {
+        if (x < gridLeft || x > gridLeft + gridWidth) {
+          canvas.drawCircle(Offset(x, y), 1.2, _bgLinePaint);
+        }
+      }
     }
 
-    final rect = Rect.fromLTWH(gridLeft, 0, gridWidth, size.y);
-    canvas.drawRect(
-      rect.inflate(4),
-      Paint()
-        ..color = Colors.black.withValues(alpha: 0.18)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20),
-    );
-    canvas.drawRect(rect, trackPaint);
-    canvas.drawRect(
-      rect.deflate(1.5),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..color = const Color(0xFF263777),
-    );
+    // Board lane background
+    final boardRect = Rect.fromLTWH(gridLeft, 0, gridWidth, size.y);
+    canvas.drawRect(boardRect, _trackPaint);
 
-    final linePaint = Paint()
-      ..color = const Color(0x223F72EB)
-      ..strokeWidth = 1;
-    for (var x = gridLeft; x < gridLeft + gridWidth; x += 64) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.y), linePaint);
-    }
-    for (var y = 0.0; y < size.y; y += 64) {
-      canvas.drawLine(
-        Offset(gridLeft, y),
-        Offset(gridLeft + gridWidth, y),
-        linePaint,
-      );
+    // Subtle vertical lines inside board lane
+    for (var x = gridLeft + 32; x < gridLeft + gridWidth; x += 32) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.y), _trackLinePaint);
     }
   }
 
@@ -1208,20 +1259,16 @@ class BlockDashGame extends FlameGame {
       totalRows - 1,
       ((worldScrollY + size.y + rowHeight) / rowHeight).ceil(),
     );
-    final border = Paint()
-      ..color = const Color(0x1474A4FF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
 
     for (var row = firstRow; row <= lastRow; row++) {
       final y = _rowToY(row) - worldScrollY;
       for (var col = 0; col < cols; col++) {
         final rect = RRect.fromRectAndRadius(
           Rect.fromLTWH(gridLeft + _cellX(col), y, cellSize, cellSize),
-          const Radius.circular(6),
+          const Radius.circular(8),
         );
-        canvas.drawRRect(rect, boardPaint);
-        canvas.drawRRect(rect, border);
+        canvas.drawRRect(rect, _boardCellPaint);
+        canvas.drawRRect(rect, _boardBorderPaint);
       }
     }
   }
@@ -1244,70 +1291,129 @@ class BlockDashGame extends FlameGame {
     }
   }
 
+  void _renderHazards(Canvas canvas) {
+    final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
+    final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
+    for (final point in hazards) {
+      if (point.row < firstRow || point.row > lastRow) continue;
+      _drawBlock(
+        canvas,
+        Rect.fromLTWH(
+          gridLeft + _cellX(point.col),
+          _rowToY(point.row) - worldScrollY,
+          cellSize,
+          cellSize,
+        ),
+        BlockDashColors.blockRed,
+      );
+    }
+  }
+
   void _renderPlayer(Canvas canvas) {
+    final t = (moveElapsed / moveDuration).clamp(0.0, 1.0);
     final x = isMoving
-        ? ui.lerpDouble(
-            moveStartX,
-            moveEndX,
-            _ease((moveElapsed / moveDuration).clamp(0, 1)),
-          )!
+        ? ui.lerpDouble(moveStartX, moveEndX, _ease(t))!
         : _screenX(playerCol);
     _drawBlock(
       canvas,
       Rect.fromLTWH(x, playerScreenY, cellSize, cellSize),
-      isDead ? BlockDashColors.red : playerPaint.color,
+      isDead ? BlockDashColors.blockRed : BlockDashColors.blockCyan,
     );
   }
 
+  /// Glossy 3-D block — Block-Blast inspired
   void _drawBlock(Canvas canvas, Rect rect, Color color) {
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
+    final radius = const Radius.circular(10);
+    final rrect = RRect.fromRectAndRadius(rect, radius);
+
+    // 1. Drop shadow (offset down)
     canvas.drawRRect(
-      rrect.shift(const Offset(0, 6)),
-      Paint()..color = Colors.black.withValues(alpha: 0.28),
+      rrect.shift(const Offset(0, 5)),
+      Paint()
+        ..color = Color.fromARGB(
+          130,
+          (color.red * 0.3).round(),
+          (color.green * 0.3).round(),
+          (color.blue * 0.3).round(),
+        ),
     );
-    final paint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color.lerp(color, Colors.white, 0.24)!,
-          color,
-          Color.lerp(color, Colors.black, 0.22)!,
-        ],
-      ).createShader(rect);
-    canvas.drawRRect(rrect, paint);
+
+    // 2. Bottom-face 3-D depth strip
+    final bottomFace = RRect.fromRectAndRadius(
+      rect.shift(const Offset(0, 3)),
+      radius,
+    );
+    canvas.drawRRect(
+      bottomFace,
+      Paint()
+        ..color = Color.fromARGB(
+          255,
+          (color.red * 0.55).round().clamp(0, 255),
+          (color.green * 0.55).round().clamp(0, 255),
+          (color.blue * 0.55).round().clamp(0, 255),
+        ),
+    );
+
+    // 3. Main face — gradient (lighter top, slightly darker bottom)
+    final lightColor = Color.fromARGB(
+      255,
+      math.min(255, color.red + 40),
+      math.min(255, color.green + 40),
+      math.min(255, color.blue + 40),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [lightColor, color],
+        ).createShader(rect),
+    );
+
+    // 4. Inner gloss highlight (top-left quadrant)
+    final glossRect = Rect.fromLTWH(
+      rect.left + rect.width * 0.12,
+      rect.top + rect.height * 0.09,
+      rect.width * 0.74,
+      rect.height * 0.36,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(glossRect, const Radius.circular(7)),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x99FFFFFF), Color(0x00FFFFFF)],
+        ).createShader(glossRect),
+    );
+
+    // 5. Subtle border
     canvas.drawRRect(
       rrect,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 5
-        ..color = Color.lerp(color, Colors.white, 0.52)!,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        rect.deflate(cellSize * 0.18),
-        const Radius.circular(5),
-      ),
-      Paint()..color = Colors.white.withValues(alpha: 0.12),
-    );
-    canvas.drawLine(
-      rect.bottomLeft - const Offset(0, 2),
-      rect.bottomRight - const Offset(0, 2),
-      Paint()
-        ..color = Colors.black.withValues(alpha: 0.26)
-        ..strokeWidth = 5,
+        ..strokeWidth = 2
+        ..color = const Color(0x44FFFFFF),
     );
   }
 
   void _renderParticles(Canvas canvas) {
-    for (final particle in particles) {
-      final opacity = (1 - particle.age / Particle.life).clamp(0.0, 1.0);
+    final paint = Paint();
+    for (final p in particles) {
+      final opacity = (1 - p.age / Particle.life).clamp(0.0, 1.0);
+      paint.color = Color.fromARGB(
+        (opacity * 255).round(),
+        p.color.red,
+        p.color.green,
+        p.color.blue,
+      );
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromCenter(center: particle.position, width: 8, height: 8),
-          const Radius.circular(2),
+          Rect.fromCenter(center: p.position, width: 8, height: 8),
+          const Radius.circular(3),
         ),
-        Paint()..color = particle.color.withValues(alpha: opacity),
+        paint,
       );
     }
   }
@@ -1323,14 +1429,19 @@ class BlockDashGame extends FlameGame {
         text: TextSpan(
           text: '+${popup.points}',
           style: TextStyle(
-            color: BlockDashColors.yellow.withValues(alpha: opacity),
+            color: Color.fromARGB(
+              (opacity * 255).round(),
+              BlockDashColors.yellow.red,
+              BlockDashColors.yellow.green,
+              BlockDashColors.yellow.blue,
+            ),
             fontSize: 28 * scale,
             fontWeight: FontWeight.w900,
             shadows: [
               Shadow(
                 offset: const Offset(0, 2),
-                blurRadius: 8,
-                color: Colors.black.withValues(alpha: 0.45 * opacity),
+                blurRadius: 6,
+                color: Color.fromARGB((0.45 * opacity * 255).round(), 0, 0, 0),
               ),
             ],
           ),
@@ -1345,6 +1456,8 @@ class BlockDashGame extends FlameGame {
     }
   }
 
+  // ── Hazard / coin generation ───────────────────────────────────────────────
+
   void _generateHazardsUntil(int minRow) {
     while (nextHazardRow >= minRow) {
       final side = _pickHazardSide();
@@ -1355,7 +1468,6 @@ class BlockDashGame extends FlameGame {
 
   void _generateCoinsUntil(int minRow) {
     if (!coinsActive) return;
-    // Reserved for later reactivation. Kept inactive by request.
     minRow;
   }
 
@@ -1373,9 +1485,9 @@ class BlockDashGame extends FlameGame {
     return side;
   }
 
-  void _placeTrail(int col, int row) {
-    trails.add(GridPoint(col, row));
-  }
+  // ── Trails ─────────────────────────────────────────────────────────────────
+
+  void _placeTrail(int col, int row) => trails.add(GridPoint(col, row));
 
   void _placeTrailPath(int fromCol, int fromRow, int colDelta, int steps) {
     var c = fromCol;
@@ -1389,24 +1501,20 @@ class BlockDashGame extends FlameGame {
 
   void _cleanupRowsBehind(int row) {
     final cutoff = row + cleanupBehindRows;
-    trails.removeWhere((point) => point.row > cutoff);
-    hazards.removeWhere((point) => point.row > cutoff);
-    coins.removeWhere((point) => point.row > cutoff);
+    trails.removeWhere((p) => p.row > cutoff);
+    hazards.removeWhere((p) => p.row > cutoff);
+    coins.removeWhere((p) => p.row > cutoff);
   }
 
+  // ── Combo ──────────────────────────────────────────────────────────────────
+
   void _increaseCombo(String moveKind) {
-    if (lastComboMove == moveKind) {
-      comboCount++;
-    } else {
-      comboCount = 1;
-    }
+    comboCount = lastComboMove == moveKind ? comboCount + 1 : 1;
     lastComboMove = moveKind;
     maxCombo = math.max(maxCombo, comboCount);
     comboTimeLeft = comboTimeout;
     comboNotifier.value = comboCount;
-    if (comboCount >= 3) {
-      _playSound('combo.wav');
-    }
+    if (comboCount >= 3) _playSound('combo.wav');
   }
 
   int _comboMultiplier() {
@@ -1423,6 +1531,8 @@ class BlockDashGame extends FlameGame {
     comboNotifier.value = 0;
   }
 
+  // ── Timer ──────────────────────────────────────────────────────────────────
+
   void _refillTimer() {
     timerValue = math.min(timerMax, timerValue + timerRefill);
     _syncTimerNotifier(force: true);
@@ -1438,10 +1548,14 @@ class BlockDashGame extends FlameGame {
     }
   }
 
+  // ── Difficulty ─────────────────────────────────────────────────────────────
+
   void _updateDifficulty() {
     currentSpeed = math.max(0.16, baseMoveSeconds - (score ~/ 20) * 0.008);
     currentDrain = math.min(maxTimerDrain, baseTimerDrain + (score ~/ 30) * 3);
   }
+
+  // ── Death ──────────────────────────────────────────────────────────────────
 
   Future<void> _triggerDeath() async {
     if (isDead) return;
@@ -1463,17 +1577,20 @@ class BlockDashGame extends FlameGame {
     });
   }
 
+  // ── Particles ──────────────────────────────────────────────────────────────
+
   void _spawnParticles(double x, double y) {
     const colors = [
-      BlockDashColors.red,
+      BlockDashColors.blockRed,
       BlockDashColors.orange,
       BlockDashColors.yellow,
-      BlockDashColors.green,
-      BlockDashColors.cyan,
-      BlockDashColors.blue,
+      BlockDashColors.blockGreen,
+      BlockDashColors.blockCyan,
+      BlockDashColors.blockBlue,
+      BlockDashColors.blockPurple,
     ];
-    for (var i = 0; i < 10; i++) {
-      final angle = math.pi * 2 * i / 10;
+    for (var i = 0; i < 12; i++) {
+      final angle = math.pi * 2 * i / 12;
       final speed = 70 + random.nextDouble() * 65;
       particles.add(
         Particle(
@@ -1486,28 +1603,27 @@ class BlockDashGame extends FlameGame {
   }
 
   void _updateParticles(double dt) {
-    for (final particle in particles) {
-      particle.age += dt;
-      particle.position += particle.velocity * dt;
+    for (final p in particles) {
+      p.age += dt;
+      p.position += p.velocity * dt;
     }
-    particles.removeWhere((particle) => particle.age >= Particle.life);
+    particles.removeWhere((p) => p.age >= Particle.life);
   }
 
   void _updateScorePopups(double dt) {
-    for (final popup in scorePopups) {
-      popup.age += dt;
+    for (final p in scorePopups) {
+      p.age += dt;
     }
-    scorePopups.removeWhere((popup) => popup.age >= ScorePopup.life);
+    scorePopups.removeWhere((p) => p.age >= ScorePopup.life);
   }
+
+  // ── Shake ──────────────────────────────────────────────────────────────────
 
   void _updateShake(double dt) {
     if (shakeTimeLeft <= 0) {
-      if (shakeNotifier.value != Offset.zero) {
-        shakeNotifier.value = Offset.zero;
-      }
+      if (shakeNotifier.value != Offset.zero) shakeNotifier.value = Offset.zero;
       return;
     }
-
     shakeTimeLeft = math.max(0, shakeTimeLeft - dt);
     final strength = 12 * (shakeTimeLeft / 0.5);
     shakeNotifier.value = Offset(
@@ -1516,33 +1632,5 @@ class BlockDashGame extends FlameGame {
     );
   }
 
-  void _playSound(String fileName) {
-    FlameAudio.play(fileName, volume: 0.65);
-  }
-}
-
-class GridBackgroundPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final gradient = const LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [Color(0xFF061044), Color(0xFF0A2B88), Color(0xFF0B49BE)],
-    );
-    canvas.drawRect(rect, Paint()..shader = gradient.createShader(rect));
-
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.055)
-      ..strokeWidth = 1;
-    for (var x = 0.0; x < size.width; x += 58) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (var y = 0.0; y < size.height; y += 58) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  void _playSound(String fileName) => FlameAudio.play(fileName, volume: 0.65);
 }
