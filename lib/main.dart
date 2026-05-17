@@ -966,12 +966,11 @@ class BlockDashGame extends FlameGame {
   static const _bestScoreKey = 'blockDashBest';
   static const cols = 5;
   static const gap = 4.0;
-  static const totalRows = 400;
   static const baseMoveSeconds = 0.24;
   static const hazardPeriod = 5;
   static const hazardOffset = 6;
   static const lookAheadRows = 80;
-  static const cleanupBehindRows = 80;
+  static const cleanupBehindRows = 30; // OPTIMIZED: Reduced from 80 to 30
   static const timerMax = 100.0;
   static const baseTimerDrain = 22.0;
   static const maxTimerDrain = 62.0;
@@ -989,9 +988,11 @@ class BlockDashGame extends FlameGame {
     Offset.zero,
   );
 
-  final hazards = <GridPoint>{};
-  final trails = <GridPoint>{};
-  final coins = <GridPoint>{};
+  // OPTIMIZATION: Use Map<int, List<GridPoint>> for spatial partitioning by row
+  final hazardsByRow = <int, List<GridPoint>>{};
+  final trailsByRow = <int, List<GridPoint>>{};
+  final coinsByRow = <int, List<GridPoint>>{};
+
   final particles = <Particle>[];
   final scorePopups = <ScorePopup>[];
   final random = math.Random();
@@ -1077,14 +1078,15 @@ class BlockDashGame extends FlameGame {
 
   void resetGame() {
     _computeLayout();
-    hazards.clear();
-    trails.clear();
-    coins.clear();
+    hazardsByRow.clear();
+    trailsByRow.clear();
+    coinsByRow.clear();
     particles.clear();
     scorePopups.clear();
     playerCol = 2;
-    playerRow = totalRows - 1;
-    nextHazardRow = totalRows - 1 - hazardOffset;
+    playerRow = 0; // INFINITE: Start at row 0 instead of totalRows-1
+    nextHazardRow =
+        -hazardOffset; // INFINITE: Generate hazards ahead (negative rows)
     lastHazardSide = null;
     secondLastHazardSide = null;
     score = 0;
@@ -1106,8 +1108,8 @@ class BlockDashGame extends FlameGame {
     _syncTimerNotifier(force: true);
     comboNotifier.value = 0;
     shakeNotifier.value = Offset.zero;
-    _generateHazardsUntil(0);
-    _generateCoinsUntil(0);
+    _generateHazardsUntil(-lookAheadRows);
+    _generateCoinsUntil(-lookAheadRows);
     _placeTrail(playerCol, playerRow);
   }
 
@@ -1134,6 +1136,7 @@ class BlockDashGame extends FlameGame {
           : playerCol;
     }
 
+    // INFINITE: Generate hazards ahead dynamically (rows get more negative)
     _generateHazardsUntil(playerRow - totalSteps - lookAheadRows);
     _generateCoinsUntil(playerRow - totalSteps - lookAheadRows);
 
@@ -1143,7 +1146,7 @@ class BlockDashGame extends FlameGame {
     for (var i = 0; i < totalSteps; i++) {
       c = (c + colDelta).clamp(0, cols - 1);
       r--;
-      if (hazards.contains(GridPoint(c, r))) {
+      if (_hasHazardAt(c, r)) {
         hitStep = i + 1;
         break;
       }
@@ -1241,7 +1244,7 @@ class BlockDashGame extends FlameGame {
     super.render(canvas);
     _renderBackground(canvas);
     _renderBoard(canvas);
-    _renderTrails(canvas); // replaced _renderGridPoints for rainbow effect
+    _renderTrails(canvas);
     _renderHazards(canvas);
     _renderParticles(canvas);
     _renderPlayer(canvas);
@@ -1302,15 +1305,10 @@ class BlockDashGame extends FlameGame {
   }
 
   void _renderBoard(Canvas canvas) {
-    final firstRow = math.max(
-      0,
-      ((worldScrollY - rowHeight) / rowHeight).floor(),
-    );
-    final lastRow = math.min(
-      totalRows - 1,
-      ((worldScrollY + size.y + rowHeight) / rowHeight).ceil(),
-    );
+    final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
+    final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
 
+    // OPTIMIZATION: Cache cell rect calculation
     for (var row = firstRow; row <= lastRow; row++) {
       final y = _rowToY(row) - worldScrollY;
       for (var col = 0; col < cols; col++) {
@@ -1324,50 +1322,53 @@ class BlockDashGame extends FlameGame {
     }
   }
 
-  /// Renders trail blocks with a subtle rainbow cycle based on row index.
+  /// OPTIMIZED: Only iterate through visible rows instead of all trails
   void _renderTrails(Canvas canvas) {
     final palette = BlockDashColors.trailRainbow;
     final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
-    for (final point in trails) {
-      if (point.row < firstRow || point.row > lastRow) continue;
-      // Cycle through the palette by row; slightly muted alpha so trails
-      // don't overpower hazards or the player block.
-      final baseColor = palette[point.row % palette.length];
-      final muted = Color.fromARGB(
-        200,
-        baseColor.red,
-        baseColor.green,
-        baseColor.blue,
-      );
-      _drawBlock(
-        canvas,
-        Rect.fromLTWH(
-          gridLeft + _cellX(point.col),
-          _rowToY(point.row) - worldScrollY,
-          cellSize,
-          cellSize,
-        ),
-        muted,
-      );
+
+    // OPTIMIZATION: Only check rows in visible range
+    for (var row = firstRow; row <= lastRow; row++) {
+      final rowTrails = trailsByRow[row];
+      if (rowTrails == null) continue;
+
+      final y = _rowToY(row) - worldScrollY;
+      for (final point in rowTrails) {
+        // Row-based rainbow cycling (abs to handle negative rows)
+        final baseColor = palette[row.abs() % palette.length];
+        final muted = Color.fromARGB(
+          200,
+          baseColor.red,
+          baseColor.green,
+          baseColor.blue,
+        );
+        _drawBlock(
+          canvas,
+          Rect.fromLTWH(gridLeft + _cellX(point.col), y, cellSize, cellSize),
+          muted,
+        );
+      }
     }
   }
 
+  /// OPTIMIZED: Only iterate through visible rows
   void _renderHazards(Canvas canvas) {
     final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
-    for (final point in hazards) {
-      if (point.row < firstRow || point.row > lastRow) continue;
-      _drawBlock(
-        canvas,
-        Rect.fromLTWH(
-          gridLeft + _cellX(point.col),
-          _rowToY(point.row) - worldScrollY,
-          cellSize,
-          cellSize,
-        ),
-        BlockDashColors.blockRed,
-      );
+
+    for (var row = firstRow; row <= lastRow; row++) {
+      final rowHazards = hazardsByRow[row];
+      if (rowHazards == null) continue;
+
+      final y = _rowToY(row) - worldScrollY;
+      for (final point in rowHazards) {
+        _drawBlock(
+          canvas,
+          Rect.fromLTWH(gridLeft + _cellX(point.col), y, cellSize, cellSize),
+          BlockDashColors.blockRed,
+        );
+      }
     }
   }
 
@@ -1523,7 +1524,7 @@ class BlockDashGame extends FlameGame {
   void _generateHazardsUntil(int minRow) {
     while (nextHazardRow >= minRow) {
       final side = _pickHazardSide();
-      hazards.add(GridPoint(side == 0 ? 0 : cols - 1, nextHazardRow));
+      _addHazard(side == 0 ? 0 : cols - 1, nextHazardRow);
       nextHazardRow -= hazardPeriod;
     }
   }
@@ -1547,9 +1548,23 @@ class BlockDashGame extends FlameGame {
     return side;
   }
 
-  // ── Trails ─────────────────────────────────────────────────────────────────
+  // ── Spatial data structure helpers ─────────────────────────────────────────
 
-  void _placeTrail(int col, int row) => trails.add(GridPoint(col, row));
+  void _addHazard(int col, int row) {
+    final point = GridPoint(col, row);
+    hazardsByRow.putIfAbsent(row, () => []).add(point);
+  }
+
+  void _placeTrail(int col, int row) {
+    final point = GridPoint(col, row);
+    trailsByRow.putIfAbsent(row, () => []).add(point);
+  }
+
+  bool _hasHazardAt(int col, int row) {
+    final rowHazards = hazardsByRow[row];
+    if (rowHazards == null) return false;
+    return rowHazards.any((p) => p.col == col);
+  }
 
   void _placeTrailPath(int fromCol, int fromRow, int colDelta, int steps) {
     var c = fromCol;
@@ -1561,11 +1576,14 @@ class BlockDashGame extends FlameGame {
     }
   }
 
+  /// OPTIMIZED: Remove entire rows at once instead of checking each point
   void _cleanupRowsBehind(int row) {
     final cutoff = row + cleanupBehindRows;
-    trails.removeWhere((p) => p.row > cutoff);
-    hazards.removeWhere((p) => p.row > cutoff);
-    coins.removeWhere((p) => p.row > cutoff);
+
+    // Remove all rows beyond cutoff
+    trailsByRow.removeWhere((r, _) => r > cutoff);
+    hazardsByRow.removeWhere((r, _) => r > cutoff);
+    coinsByRow.removeWhere((r, _) => r > cutoff);
   }
 
   // ── Combo ──────────────────────────────────────────────────────────────────
