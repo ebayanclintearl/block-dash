@@ -299,6 +299,24 @@ class _GameScreenState extends State<GameScreen> {
           child: Stack(
             children: [
               GameWidget(game: _game),
+              Positioned.fill(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (_) => _game.movePlayer(Direction.left),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (_) => _game.movePlayer(Direction.right),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
@@ -311,24 +329,6 @@ class _GameScreenState extends State<GameScreen> {
                       _ComboPopup(game: _game),
                     ],
                   ),
-                ),
-              ),
-              Positioned(
-                left: 28,
-                right: 28,
-                bottom: 42 + MediaQuery.paddingOf(context).bottom,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ControlButton(
-                      icon: Icons.chevron_left_rounded,
-                      onPressed: () => _game.movePlayer(Direction.left),
-                    ),
-                    ControlButton(
-                      icon: Icons.chevron_right_rounded,
-                      onPressed: () => _game.movePlayer(Direction.right),
-                    ),
-                  ],
                 ),
               ),
             ],
@@ -620,51 +620,6 @@ class ScoreLine extends StatelessWidget {
   }
 }
 
-class ControlButton extends StatelessWidget {
-  const ControlButton({super.key, required this.icon, required this.onPressed});
-
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context).shortestSide.clamp(64.0, 82.0);
-    return SizedBox.square(
-      dimension: size,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: onPressed,
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFFFD94D),
-                  BlockDashColors.orange,
-                  Color(0xFFE35C11),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFFFE985), width: 3),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x6600145A),
-                  blurRadius: 18,
-                  offset: Offset(0, 7),
-                ),
-              ],
-            ),
-            child: Icon(icon, size: size * 0.62, color: Colors.white),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _GameHud extends StatelessWidget {
   const _GameHud({required this.game});
 
@@ -896,7 +851,7 @@ class BlockDashGame extends FlameGame {
   static const cols = 5;
   static const gap = 4.0;
   static const totalRows = 400;
-  static const baseMoveSeconds = 0.20;
+  static const baseMoveSeconds = 0.24;
   static const hazardPeriod = 5;
   static const hazardOffset = 6;
   static const lookAheadRows = 80;
@@ -945,6 +900,8 @@ class BlockDashGame extends FlameGame {
   double comboTimeLeft = 0;
   String? lastComboMove;
   double timerValue = timerMax;
+  double lastTimerRatio = 1;
+  double timerNotifyElapsed = 0;
   double currentSpeed = baseMoveSeconds;
   double currentDrain = baseTimerDrain;
   bool isMoving = false;
@@ -989,6 +946,9 @@ class BlockDashGame extends FlameGame {
     if (size.x <= 0 || size.y <= 0) return;
     _computeLayout();
     if (isLoaded) {
+      if (!isMoving) {
+        playerScreenY = size.y - cellSize - 20;
+      }
       worldScrollY = _rowToY(playerRow) - playerScreenY;
     }
   }
@@ -1011,6 +971,8 @@ class BlockDashGame extends FlameGame {
     comboTimeLeft = 0;
     lastComboMove = null;
     timerValue = timerMax;
+    lastTimerRatio = 1;
+    timerNotifyElapsed = 0;
     currentSpeed = baseMoveSeconds;
     currentDrain = baseTimerDrain;
     isMoving = false;
@@ -1019,7 +981,7 @@ class BlockDashGame extends FlameGame {
     worldScrollY = _rowToY(playerRow) - playerScreenY;
     scoreNotifier.value = 0;
     bestNotifier.value = bestScore;
-    timerNotifier.value = 1;
+    _syncTimerNotifier(force: true);
     comboNotifier.value = 0;
     shakeNotifier.value = Offset.zero;
     _generateHazardsUntil(0);
@@ -1068,10 +1030,11 @@ class BlockDashGame extends FlameGame {
     final steps = hitStep > 0 ? hitStep : totalSteps;
     final destCol = (playerCol + colDelta * steps).clamp(0, cols - 1);
     final destRow = playerRow - steps;
-    final duration = currentSpeed * steps / totalSteps;
+    final duration = math.max(0.16, currentSpeed * steps / totalSteps);
 
     _increaseCombo(moveKind);
     _playSound('move.wav');
+    HapticFeedback.selectionClick();
     _placeTrailPath(playerCol, playerRow, colDelta, steps);
     _spawnParticles(
       _screenX(playerCol) + cellSize / 2,
@@ -1114,7 +1077,8 @@ class BlockDashGame extends FlameGame {
     }
 
     timerValue = math.max(0, timerValue - currentDrain * dt);
-    timerNotifier.value = timerValue / timerMax;
+    timerNotifyElapsed += dt;
+    _syncTimerNotifier();
     if (timerValue <= 0) {
       _triggerDeath();
       return;
@@ -1165,9 +1129,9 @@ class BlockDashGame extends FlameGame {
 
   void _computeLayout() {
     final visibleAbove = size.y * 0.50;
-    final byHeight = (visibleAbove / 22).floor() - gap;
-    final byWidth = ((size.x * 0.86 - gap * (cols + 1)) / cols).floor();
-    cellSize = math.max(math.min(byHeight, byWidth), 30).toDouble();
+    final byHeight = ((visibleAbove - gap * 8) / 7.2).floor();
+    final byWidth = ((size.x * 0.96 - gap * (cols + 1)) / cols).floor();
+    cellSize = math.max(math.min(byHeight, byWidth), 44).toDouble();
     rowHeight = cellSize + gap;
     gridWidth = cols * (cellSize + gap) + gap;
     gridLeft = ((size.x - gridWidth) / 2).roundToDouble();
@@ -1177,7 +1141,10 @@ class BlockDashGame extends FlameGame {
   double _rowToY(int row) => gap + row * rowHeight;
   double _screenX(int col) => gridLeft + _cellX(col);
 
-  double _ease(double t) => 1 - math.pow(1 - t, 3).toDouble();
+  double _ease(double t) {
+    if (t < 0.5) return 4 * t * t * t;
+    return 1 - math.pow(-2 * t + 2, 3).toDouble() / 2;
+  }
 
   void _renderBackground(Canvas canvas) {
     final full = Rect.fromLTWH(0, 0, size.x, size.y);
@@ -1458,11 +1425,21 @@ class BlockDashGame extends FlameGame {
 
   void _refillTimer() {
     timerValue = math.min(timerMax, timerValue + timerRefill);
-    timerNotifier.value = timerValue / timerMax;
+    _syncTimerNotifier(force: true);
+  }
+
+  void _syncTimerNotifier({bool force = false}) {
+    final ratio = (timerValue / timerMax).clamp(0.0, 1.0);
+    final changedEnough = (ratio - lastTimerRatio).abs() >= 0.006;
+    if (force || changedEnough || timerNotifyElapsed >= 1 / 30) {
+      lastTimerRatio = ratio;
+      timerNotifyElapsed = 0;
+      timerNotifier.value = ratio;
+    }
   }
 
   void _updateDifficulty() {
-    currentSpeed = math.max(0.12, baseMoveSeconds - (score ~/ 20) * 0.01);
+    currentSpeed = math.max(0.16, baseMoveSeconds - (score ~/ 20) * 0.008);
     currentDrain = math.min(maxTimerDrain, baseTimerDrain + (score ~/ 30) * 3);
   }
 
