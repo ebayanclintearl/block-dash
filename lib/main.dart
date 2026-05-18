@@ -84,8 +84,49 @@ class BlockDashColors {
     Color(0xFFE8C000), // yellow
     Color(0xFFFF6828), // orange
     Color(0xFFB050EE), // purple
-    Color(0xFFE83050), // red-pink
   ];
+}
+
+int _channel(double value) => (value * 255).round().clamp(0, 255);
+int _red(Color color) => _channel(color.r);
+int _green(Color color) => _channel(color.g);
+int _blue(Color color) => _channel(color.b);
+
+Color _colorWithAlpha(Color color, int alpha) {
+  return Color.fromARGB(alpha, _red(color), _green(color), _blue(color));
+}
+
+Color _scaleColor(Color color, double scale, {int alpha = 255}) {
+  return Color.fromARGB(
+    alpha,
+    (_red(color) * scale).round().clamp(0, 255),
+    (_green(color) * scale).round().clamp(0, 255),
+    (_blue(color) * scale).round().clamp(0, 255),
+  );
+}
+
+Color _lightenColor(Color color, int amount) {
+  return Color.fromARGB(
+    255,
+    math.min(255, _red(color) + amount),
+    math.min(255, _green(color) + amount),
+    math.min(255, _blue(color) + amount),
+  );
+}
+
+class _GameSettings {
+  static const sfxKey = 'blockDashSfxEnabled';
+  static const backgroundMusicKey = 'blockDashBackgroundMusicEnabled';
+  static const vibrationKey = 'blockDashVibrationEnabled';
+
+  static bool sfxEnabled(SharedPreferences prefs) =>
+      prefs.getBool(sfxKey) ?? true;
+
+  static bool backgroundMusicEnabled(SharedPreferences prefs) =>
+      prefs.getBool(backgroundMusicKey) ?? false;
+
+  static bool vibrationEnabled(SharedPreferences prefs) =>
+      prefs.getBool(vibrationKey) ?? true;
 }
 
 // ─── Home Screen ───────────────────────────────────────────────────────────────
@@ -98,52 +139,490 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return _BlueScaffold(
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-          child: Column(
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+              child: Column(
+                children: [
+                  const Spacer(flex: 2),
+                  const _HomeBlocks(),
+                  const SizedBox(height: 12),
+                  const _BlockTitle(text: 'BLOCK\nDASH'),
+                  const SizedBox(height: 16),
+                  _SubTag(text: 'STACK · DODGE · WIN'),
+                  const Spacer(flex: 2),
+                  // PLAY button — orange pill matching Block Blast style
+                  _BigButton(
+                    label: 'PLAY',
+                    icon: Icons.play_arrow_rounded,
+                    color: const Color(0xFFFF8C00),
+                    accentColor: const Color(0xFFFFD000),
+                    shadowColor: const Color(0xAAFF6000),
+                    tall: true,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => GameScreen(prefs: prefs),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // RATE US button — green pill
+                  _BigButton(
+                    label: 'RATE US',
+                    icon: Icons.star_rate_rounded,
+                    color: const Color(0xFF2DBD44),
+                    accentColor: const Color(0xFF52E868),
+                    shadowColor: const Color(0xAA1A8830),
+                    onPressed: () => _showRateUsDialog(context),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 10,
+              child: _HomeIconButton(
+                tooltip: 'Settings',
+                icon: Icons.settings_rounded,
+                onPressed: () => _showSettingsDialog(context, prefs),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showSettingsDialog(
+  BuildContext context,
+  SharedPreferences prefs,
+) {
+  return showDialog<void>(
+    context: context,
+    barrierColor: const Color(0xAA071431),
+    builder: (_) => _SettingsDialog(prefs: prefs),
+  );
+}
+
+Future<void> _showRateUsDialog(BuildContext context) {
+  return showDialog<void>(
+    context: context,
+    barrierColor: const Color(0x99071431),
+    builder: (context) => AlertDialog(
+      backgroundColor: const Color(0xFF263A9D),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      title: const Text(
+        'Rate Us',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontWeight: FontWeight.w900),
+      ),
+      content: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(flex: 2),
-              const _HomeBlocks(),
-              const SizedBox(height: 12),
-              const _BlockTitle(text: 'BLOCK\nDASH'),
-              const SizedBox(height: 16),
-              _SubTag(text: 'STACK · DODGE · WIN'),
-              const Spacer(flex: 2),
-              // PLAY button — orange pill matching Block Blast style
-              _BigButton(
-                label: 'PLAY',
-                icon: Icons.play_arrow_rounded,
-                color: const Color(0xFFFF8C00),
-                accentColor: const Color(0xFFFFD000),
-                shadowColor: const Color(0xAAFF6000),
-                tall: true,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => GameScreen(prefs: prefs),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
+            ],
+          ),
+          SizedBox(height: 14),
+          Text(
+            'Thanks for supporting Block Dash.',
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('CLOSE'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _HomeIconButton extends StatelessWidget {
+  const _HomeIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        clipBehavior: Clip.antiAlias,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: Ink(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0x55183080),
+              border: Border.all(color: const Color(0x66B0D8FF), width: 2),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x55000000),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 30),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsDialog extends StatefulWidget {
+  const _SettingsDialog({required this.prefs});
+
+  final SharedPreferences prefs;
+
+  @override
+  State<_SettingsDialog> createState() => _SettingsDialogState();
+}
+
+class _SettingsDialogState extends State<_SettingsDialog> {
+  late bool _sfxEnabled;
+  late bool _backgroundMusicEnabled;
+  late bool _vibrationEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _sfxEnabled = _GameSettings.sfxEnabled(widget.prefs);
+    _backgroundMusicEnabled = _GameSettings.backgroundMusicEnabled(
+      widget.prefs,
+    );
+    _vibrationEnabled = _GameSettings.vibrationEnabled(widget.prefs);
+  }
+
+  Future<void> _setSfxEnabled(bool value) async {
+    setState(() => _sfxEnabled = value);
+    await widget.prefs.setBool(_GameSettings.sfxKey, value);
+  }
+
+  Future<void> _setBackgroundMusicEnabled(bool value) async {
+    setState(() => _backgroundMusicEnabled = value);
+    await widget.prefs.setBool(_GameSettings.backgroundMusicKey, value);
+  }
+
+  Future<void> _setVibrationEnabled(bool value) async {
+    setState(() => _vibrationEnabled = value);
+    await widget.prefs.setBool(_GameSettings.vibrationKey, value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.82;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 430, maxHeight: maxHeight),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF6D95FF), Color(0xFF4C6EE8)],
+            ),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0x778DB0FF), width: 2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x77000000),
+                blurRadius: 22,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const SizedBox(width: 48),
+                    const Expanded(
+                      child: Text(
+                        'Settings',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(0, 3),
+                              blurRadius: 4,
+                              color: Color(0x66000000),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Color(0xFFD8E6FF),
+                        size: 42,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(0, 2),
+                            blurRadius: 3,
+                            color: Color(0x66000000),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xAA263A9D),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Column(
+                          children: [
+                            _SettingsToggleRow(
+                              icon: Icons.volume_up_rounded,
+                              label: 'SFX',
+                              value: _sfxEnabled,
+                              onChanged: _setSfxEnabled,
+                            ),
+                            const _SettingsDivider(),
+                            _SettingsToggleRow(
+                              icon: Icons.music_note_rounded,
+                              label: 'Background Music',
+                              value: _backgroundMusicEnabled,
+                              onChanged: _setBackgroundMusicEnabled,
+                            ),
+                            const _SettingsDivider(),
+                            _SettingsToggleRow(
+                              icon: Icons.vibration_rounded,
+                              label: 'Vibration',
+                              value: _vibrationEnabled,
+                              onChanged: _setVibrationEnabled,
+                            ),
+                            const _SettingsDivider(),
+                            _SettingsLinkRow(
+                              icon: Icons.description_rounded,
+                              label: 'Terms of Service',
+                              onTap: () => _showInfoDialog(
+                                context,
+                                title: 'Terms of Service',
+                                body:
+                                    'Block Dash is provided for entertainment. '
+                                    'By playing, you agree to use the game fairly '
+                                    'and follow applicable app store rules.',
+                              ),
+                            ),
+                            const _SettingsDivider(),
+                            _SettingsLinkRow(
+                              icon: Icons.privacy_tip_rounded,
+                              label: 'Privacy Policy',
+                              onTap: () => _showInfoDialog(
+                                context,
+                                title: 'Privacy Policy',
+                                body:
+                                    'Block Dash stores your settings and best '
+                                    'score on this device. This build does not '
+                                    'collect personal information.',
+                              ),
+                            ),
+                            const _SettingsDivider(),
+                            _SettingsLinkRow(
+                              icon: Icons.mail_rounded,
+                              label: 'Contact Us',
+                              onTap: () => _showInfoDialog(
+                                context,
+                                title: 'Contact Us',
+                                body:
+                                    'For support, feedback, or questions, add '
+                                    'your support email or help center link here.',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsToggleRow extends StatelessWidget {
+  const _SettingsToggleRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white, size: 34),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 23,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            thumbColor: const WidgetStatePropertyAll(Colors.white),
+            trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+            trackColor: WidgetStateProperty.resolveWith((states) {
+              return states.contains(WidgetState.selected)
+                  ? const Color(0xFF68D36D)
+                  : const Color(0xFF344793);
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsLinkRow extends StatelessWidget {
+  const _SettingsLinkRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 32),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              // SETTINGS button — green pill
-              _BigButton(
-                label: 'SETTINGS',
-                icon: Icons.settings_rounded,
-                color: const Color(0xFF2DBD44),
-                accentColor: const Color(0xFF52E868),
-                shadowColor: const Color(0xAA1A8830),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Settings coming soon!')),
-                  );
-                },
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white,
+                size: 36,
               ),
-              const Spacer(),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+class _SettingsDivider extends StatelessWidget {
+  const _SettingsDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Divider(
+      height: 1,
+      thickness: 1,
+      indent: 16,
+      endIndent: 16,
+      color: Color(0x332654BC),
+    );
+  }
+}
+
+Future<void> _showInfoDialog(
+  BuildContext context, {
+  required String title,
+  required String body,
+}) {
+  return showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: const Color(0xFF263A9D),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+      content: Text(body),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _HomeBlocks extends StatelessWidget {
@@ -196,7 +675,7 @@ class _MiniBlock extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.18),
         boxShadow: [
           BoxShadow(
-            color: Color.fromARGB(100, color.red, color.green, color.blue),
+            color: _colorWithAlpha(color, 100),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),
@@ -239,8 +718,8 @@ class _SubTag extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: const Text(
-        'STACK · DODGE · WIN',
+      child: Text(
+        text,
         style: TextStyle(
           color: Colors.white,
           fontSize: 15,
@@ -276,12 +755,7 @@ class _BigButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final h = tall ? 84.0 : 68.0;
     // Darker bottom shade for 3-D depth
-    final darkColor = Color.fromARGB(
-      255,
-      (color.red * 0.68).round(),
-      (color.green * 0.68).round(),
-      (color.blue * 0.68).round(),
-    );
+    final darkColor = _scaleColor(color, 0.68);
 
     return SizedBox(
       width: double.infinity,
@@ -310,6 +784,8 @@ class _BigButton extends StatelessWidget {
               height: h,
               child: Material(
                 color: Colors.transparent,
+                clipBehavior: Clip.antiAlias,
+                borderRadius: BorderRadius.circular(h / 2),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(h / 2),
                   onTap: onPressed,
@@ -397,10 +873,9 @@ class _BigButton extends StatelessWidget {
 
 // ─── Block Title ───────────────────────────────────────────────────────────────
 class _BlockTitle extends StatelessWidget {
-  const _BlockTitle({required this.text, this.danger = false});
+  const _BlockTitle({required this.text});
 
   final String text;
-  final bool danger;
 
   @override
   Widget build(BuildContext context) {
@@ -414,7 +889,7 @@ class _BlockTitle extends StatelessWidget {
         fontSize: fontSize,
         fontWeight: FontWeight.w900,
         letterSpacing: -1,
-        color: danger ? BlockDashColors.red : BlockDashColors.yellow,
+        color: BlockDashColors.yellow,
         shadows: const [
           Shadow(offset: Offset(0, 5), blurRadius: 0, color: Color(0xAA000000)),
           Shadow(blurRadius: 20, color: Color(0x882080FF)),
@@ -833,17 +1308,6 @@ class _TimerBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: colors),
                   borderRadius: BorderRadius.circular(7),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color.fromARGB(
-                        120,
-                        colors.first.red,
-                        colors.first.green,
-                        colors.first.blue,
-                      ),
-                      blurRadius: value <= 0.25 ? 14 : 8,
-                    ),
-                  ],
                 ),
                 // FIX: without a sized child, DecoratedBox collapses to zero
                 child: const SizedBox.expand(),
@@ -864,45 +1328,37 @@ class _ComboPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Always reserve the same 36px height; only show content when combo >= 3.
-    // This eliminates the layout recalculation that caused jank.
+    // Keep the slot fixed, but avoid opacity layers/blur while the game is
+    // rendering. Combo changes should repaint once, not animate every frame.
     return SizedBox(
       height: 36,
       child: ValueListenableBuilder<int>(
         valueListenable: game.comboNotifier,
         builder: (_, combo, _) {
-          return AnimatedOpacity(
-            opacity: combo >= 3 ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 120),
-            child: combo >= 3
-                ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFFE566), BlockDashColors.orange],
-                      ),
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x88FF9800), blurRadius: 14),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${combo}x COMBO!',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(0, 2),
-                            color: Color(0x88000000),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
+          if (combo < 3) return const SizedBox.shrink();
+          return Center(
+            child: RepaintBoundary(
+              child: Container(
+                height: 30,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFE566), BlockDashColors.orange],
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: const Color(0x66FFFFFF)),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${combo}x COMBO!',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
           );
         },
       ),
@@ -912,17 +1368,6 @@ class _ComboPopup extends StatelessWidget {
 
 // ─── Game Enums / Models ───────────────────────────────────────────────────────
 enum Direction { left, right }
-
-class GridPoint {
-  const GridPoint(this.col, this.row);
-  final int col;
-  final int row;
-  @override
-  bool operator ==(Object other) =>
-      other is GridPoint && other.col == col && other.row == row;
-  @override
-  int get hashCode => Object.hash(col, row);
-}
 
 class Particle {
   Particle({
@@ -938,8 +1383,8 @@ class Particle {
 }
 
 class ScorePopup {
-  ScorePopup({required this.position, required this.points});
-  Offset position;
+  ScorePopup({required this.worldPosition, required this.points});
+  Offset worldPosition;
   final int points;
   double age = 0;
   static const life = 0.9;
@@ -976,7 +1421,18 @@ class BlockDashGame extends FlameGame {
   static const maxTimerDrain = 62.0;
   static const timerRefill = 35.0;
   static const comboTimeout = 1.5;
-  static const coinsActive = false;
+  static const cameraFollowStrength = 12.0;
+  static const maxParticles = 40;
+  static const particleBurstCount = 8;
+  static const _particleColors = [
+    BlockDashColors.blockRed,
+    BlockDashColors.orange,
+    BlockDashColors.yellow,
+    BlockDashColors.blockGreen,
+    BlockDashColors.blockCyan,
+    BlockDashColors.blockBlue,
+    BlockDashColors.blockPurple,
+  ];
 
   final SharedPreferences prefs;
   final void Function(GameResult result) onGameOver;
@@ -988,20 +1444,29 @@ class BlockDashGame extends FlameGame {
     Offset.zero,
   );
 
-  // OPTIMIZATION: Use Map<int, List<GridPoint>> for spatial partitioning by row
-  final hazardsByRow = <int, List<GridPoint>>{};
-  final trailsByRow = <int, List<GridPoint>>{};
-  final coinsByRow = <int, List<GridPoint>>{};
+  // Row bitmasks keep the infinite grid compact and allocation-light.
+  final hazardsByRow = <int, int>{};
+  final trailsByRow = <int, int>{};
 
   final particles = <Particle>[];
   final scorePopups = <ScorePopup>[];
   final random = math.Random();
+  final _cellXs = List<double>.filled(cols, 0, growable: false);
+  final _scorePopupPainters = <int, TextPainter>{};
+  final _particlePaint = Paint();
+  final _blockPictures = <Color, ui.Picture>{};
+  final _trailBlockColors = <Color>[];
+  ui.Picture? _backgroundPicture;
+  ui.Picture? _boardCellPicture;
+  bool _layoutReady = false;
 
   late double cellSize;
   late double rowHeight;
   late double gridWidth;
   late double gridLeft;
   late double worldScrollY;
+  late double cameraTargetScrollY;
+  late double playerWorldY;
   late double playerScreenY;
   late int playerCol;
   late int playerRow;
@@ -1025,16 +1490,15 @@ class BlockDashGame extends FlameGame {
   double moveElapsed = 0;
   double moveDuration = 0;
   double moveStartX = 0;
-  double moveStartY = 0;
   double moveEndX = 0;
-  double moveEndY = 0;
-  double scrollStartY = 0;
-  double scrollEndY = 0;
+  double moveStartWorldY = 0;
+  double moveEndWorldY = 0;
   int pendingCol = 0;
   int pendingRow = 0;
   int pendingSteps = 0;
   bool pendingDeath = false;
   double shakeTimeLeft = 0;
+  double comboSoundCooldown = 0;
 
   // Pre-baked paints
   final _boardCellPaint = Paint()..color = BlockDashColors.boardCell;
@@ -1066,13 +1530,27 @@ class BlockDashGame extends FlameGame {
   }
 
   @override
+  void onRemove() {
+    _disposeRenderCache();
+    scoreNotifier.dispose();
+    bestNotifier.dispose();
+    timerNotifier.dispose();
+    comboNotifier.dispose();
+    shakeNotifier.dispose();
+    super.onRemove();
+  }
+
+  @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
     if (size.x <= 0 || size.y <= 0) return;
     _computeLayout();
     if (isLoaded) {
-      if (!isMoving) playerScreenY = size.y - cellSize - 20;
-      worldScrollY = _rowToY(playerRow) - playerScreenY;
+      if (!isMoving) playerWorldY = _rowToY(playerRow);
+      final anchor = isMoving ? _cameraAnchorY : size.y - cellSize - 20;
+      worldScrollY = playerWorldY - anchor;
+      cameraTargetScrollY = worldScrollY;
+      playerScreenY = playerWorldY - worldScrollY;
     }
   }
 
@@ -1080,9 +1558,9 @@ class BlockDashGame extends FlameGame {
     _computeLayout();
     hazardsByRow.clear();
     trailsByRow.clear();
-    coinsByRow.clear();
     particles.clear();
     scorePopups.clear();
+    _scorePopupPainters.clear();
     playerCol = 2;
     playerRow = 0; // INFINITE: Start at row 0 instead of totalRows-1
     nextHazardRow =
@@ -1101,15 +1579,17 @@ class BlockDashGame extends FlameGame {
     currentDrain = baseTimerDrain;
     isMoving = false;
     isDead = false;
+    comboSoundCooldown = 0;
+    playerWorldY = _rowToY(playerRow);
     playerScreenY = size.y - cellSize - 20;
-    worldScrollY = _rowToY(playerRow) - playerScreenY;
+    worldScrollY = playerWorldY - playerScreenY;
+    cameraTargetScrollY = worldScrollY;
     scoreNotifier.value = 0;
     bestNotifier.value = bestScore;
     _syncTimerNotifier(force: true);
     comboNotifier.value = 0;
     shakeNotifier.value = Offset.zero;
     _generateHazardsUntil(-lookAheadRows);
-    _generateCoinsUntil(-lookAheadRows);
     _placeTrail(playerCol, playerRow);
   }
 
@@ -1138,7 +1618,6 @@ class BlockDashGame extends FlameGame {
 
     // INFINITE: Generate hazards ahead dynamically (rows get more negative)
     _generateHazardsUntil(playerRow - totalSteps - lookAheadRows);
-    _generateCoinsUntil(playerRow - totalSteps - lookAheadRows);
 
     var hitStep = -1;
     var c = playerCol;
@@ -1159,7 +1638,7 @@ class BlockDashGame extends FlameGame {
 
     _increaseCombo(moveKind);
     _playSound('move.wav');
-    HapticFeedback.selectionClick();
+    _playHapticSelection();
     _placeTrailPath(playerCol, playerRow, colDelta, steps);
     _spawnParticles(
       _screenX(playerCol) + cellSize / 2,
@@ -1168,9 +1647,6 @@ class BlockDashGame extends FlameGame {
     _refillTimer();
 
     final destWorldY = _rowToY(destRow);
-    final camLine = size.y * 0.50;
-    final destScreenNoScroll = destWorldY - worldScrollY;
-    final needsScroll = destScreenNoScroll < camLine;
 
     isMoving = true;
     pendingCol = destCol;
@@ -1180,11 +1656,13 @@ class BlockDashGame extends FlameGame {
     moveElapsed = 0;
     moveDuration = duration;
     moveStartX = _screenX(playerCol);
-    moveStartY = playerScreenY;
     moveEndX = _screenX(destCol);
-    moveEndY = needsScroll ? camLine : destScreenNoScroll;
-    scrollStartY = worldScrollY;
-    scrollEndY = needsScroll ? destWorldY - camLine : worldScrollY;
+    moveStartWorldY = playerWorldY;
+    moveEndWorldY = destWorldY;
+    cameraTargetScrollY = math.min(
+      cameraTargetScrollY,
+      destWorldY - _cameraAnchorY,
+    );
   }
 
   @override
@@ -1193,6 +1671,9 @@ class BlockDashGame extends FlameGame {
     _updateParticles(dt);
     _updateScorePopups(dt);
     _updateShake(dt);
+    if (comboSoundCooldown > 0) {
+      comboSoundCooldown = math.max(0, comboSoundCooldown - dt);
+    }
 
     if (isDead) return;
 
@@ -1209,34 +1690,41 @@ class BlockDashGame extends FlameGame {
       return;
     }
 
-    if (!isMoving) return;
+    if (isMoving) {
+      moveElapsed += dt;
+      final t = (moveElapsed / moveDuration).clamp(0.0, 1.0);
+      final eased = _ease(t);
+      playerWorldY = ui.lerpDouble(moveStartWorldY, moveEndWorldY, eased)!;
 
-    moveElapsed += dt;
-    final t = (moveElapsed / moveDuration).clamp(0.0, 1.0);
-    final eased = _ease(t);
-    playerScreenY = ui.lerpDouble(moveStartY, moveEndY, eased)!;
-    worldScrollY = ui.lerpDouble(scrollStartY, scrollEndY, eased)!;
+      if (t >= 1) {
+        isMoving = false;
+        playerCol = pendingCol;
+        playerRow = pendingRow;
+        playerWorldY = moveEndWorldY;
+        cameraTargetScrollY = math.min(
+          cameraTargetScrollY,
+          playerWorldY - _cameraAnchorY,
+        );
+        _cleanupRowsBehind(playerRow);
 
-    if (t >= 1) {
-      isMoving = false;
-      playerCol = pendingCol;
-      playerRow = pendingRow;
-      playerScreenY = moveEndY;
-      worldScrollY = scrollEndY;
-      _cleanupRowsBehind(playerRow);
-
-      final movePoints = (pendingSteps + 1) * _comboMultiplier();
-      score += movePoints;
-      scoreNotifier.value = score;
-      scorePopups.add(
-        ScorePopup(
-          position: Offset(moveEndX + cellSize / 2, moveEndY + cellSize / 2),
-          points: movePoints,
-        ),
-      );
-      _updateDifficulty();
-      if (pendingDeath) _triggerDeath();
+        final movePoints = (pendingSteps + 1) * _comboMultiplier();
+        score += movePoints;
+        scoreNotifier.value = score;
+        scorePopups.add(
+          ScorePopup(
+            worldPosition: Offset(
+              moveEndX + cellSize / 2,
+              playerWorldY + cellSize / 2,
+            ),
+            points: movePoints,
+          ),
+        );
+        _updateDifficulty();
+        if (pendingDeath) _triggerDeath();
+      }
     }
+
+    _updateCamera(dt);
   }
 
   @override
@@ -1255,69 +1743,163 @@ class BlockDashGame extends FlameGame {
     final visibleAbove = size.y * 0.50;
     final byHeight = ((visibleAbove - gap * 8) / 7.2).floor();
     final byWidth = ((size.x * 0.96 - gap * (cols + 1)) / cols).floor();
-    cellSize = math.max(math.min(byHeight, byWidth), 44).toDouble();
-    rowHeight = cellSize + gap;
-    gridWidth = cols * (cellSize + gap) + gap;
-    gridLeft = ((size.x - gridWidth) / 2).roundToDouble();
+    final nextCellSize = math.max(math.min(byHeight, byWidth), 44).toDouble();
+    final nextRowHeight = nextCellSize + gap;
+    final nextGridWidth = cols * (nextCellSize + gap) + gap;
+    final nextGridLeft = ((size.x - nextGridWidth) / 2).roundToDouble();
+    final changed =
+        !_layoutReady ||
+        nextCellSize != cellSize ||
+        nextRowHeight != rowHeight ||
+        nextGridWidth != gridWidth ||
+        nextGridLeft != gridLeft;
+
+    cellSize = nextCellSize;
+    rowHeight = nextRowHeight;
+    gridWidth = nextGridWidth;
+    gridLeft = nextGridLeft;
+    for (var col = 0; col < cols; col++) {
+      _cellXs[col] = gap + col * (cellSize + gap);
+    }
+
+    if (changed) {
+      _layoutReady = true;
+      _rebuildRenderCache();
+    }
   }
 
-  double _cellX(int col) => gap + col * (cellSize + gap);
+  double get _cameraAnchorY => size.y * 0.50;
+
+  double _cellX(int col) => _cellXs[col];
   double _rowToY(int row) => gap + row * rowHeight;
   double _screenX(int col) => gridLeft + _cellX(col);
+
+  void _updateCamera(double dt) {
+    final delta = cameraTargetScrollY - worldScrollY;
+    if (delta.abs() < 0.05) {
+      worldScrollY = cameraTargetScrollY;
+    } else {
+      final follow = 1 - math.exp(-cameraFollowStrength * dt);
+      worldScrollY += delta * follow;
+    }
+    playerScreenY = playerWorldY - worldScrollY;
+  }
 
   double _ease(double t) {
     if (t < 0.5) return 4 * t * t * t;
     return 1 - math.pow(-2 * t + 2, 3).toDouble() / 2;
   }
 
+  void _disposeRenderCache() {
+    _backgroundPicture?.dispose();
+    _boardCellPicture?.dispose();
+    for (final picture in _blockPictures.values) {
+      picture.dispose();
+    }
+    _backgroundPicture = null;
+    _boardCellPicture = null;
+    _blockPictures.clear();
+    _trailBlockColors.clear();
+  }
+
+  void _rebuildRenderCache() {
+    if (size.x <= 0 || size.y <= 0) return;
+    _disposeRenderCache();
+
+    _backgroundPicture = _recordPicture(Rect.fromLTWH(0, 0, size.x, size.y), (
+      canvas,
+    ) {
+      final full = Rect.fromLTWH(0, 0, size.x, size.y);
+      canvas.drawRect(
+        full,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              BlockDashColors.bgTop,
+              BlockDashColors.bgMid,
+              BlockDashColors.bgBottom,
+            ],
+          ).createShader(full),
+      );
+
+      for (var x = 20.0; x < size.x; x += 48) {
+        for (var y = 0.0; y < size.y; y += 48) {
+          if (x < gridLeft || x > gridLeft + gridWidth) {
+            canvas.drawCircle(Offset(x, y), 1.2, _bgLinePaint);
+          }
+        }
+      }
+
+      final boardRect = Rect.fromLTWH(gridLeft, 0, gridWidth, size.y);
+      canvas.drawRect(boardRect, _trackPaint);
+
+      for (var x = gridLeft + 32; x < gridLeft + gridWidth; x += 32) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.y), _trackLinePaint);
+      }
+    });
+
+    _boardCellPicture = _recordPicture(
+      Rect.fromLTWH(0, 0, cellSize, cellSize),
+      (canvas) {
+        final rect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, cellSize, cellSize),
+          const Radius.circular(8),
+        );
+        canvas.drawRRect(rect, _boardCellPaint);
+        canvas.drawRRect(rect, _boardBorderPaint);
+      },
+    );
+
+    _cacheBlockPicture(BlockDashColors.blockCyan);
+    _cacheBlockPicture(BlockDashColors.blockRed);
+    for (final baseColor in BlockDashColors.trailRainbow) {
+      final muted = _colorWithAlpha(baseColor, 200);
+      _trailBlockColors.add(muted);
+      _cacheBlockPicture(muted);
+    }
+  }
+
+  ui.Picture _recordPicture(Rect cullRect, void Function(Canvas canvas) paint) {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, cullRect);
+    paint(canvas);
+    return recorder.endRecording();
+  }
+
+  void _cacheBlockPicture(Color color) {
+    _blockPictures[color] = _recordPicture(
+      Rect.fromLTWH(0, 0, cellSize, cellSize + 8),
+      (canvas) =>
+          _drawBlockRaw(canvas, Rect.fromLTWH(0, 0, cellSize, cellSize), color),
+    );
+  }
+
+  void _drawPictureAt(Canvas canvas, ui.Picture picture, double x, double y) {
+    canvas.save();
+    canvas.translate(x, y);
+    canvas.drawPicture(picture);
+    canvas.restore();
+  }
+
   // ── Rendering ──────────────────────────────────────────────────────────────
 
   void _renderBackground(Canvas canvas) {
-    final full = Rect.fromLTWH(0, 0, size.x, size.y);
-    canvas.drawRect(
-      full,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            BlockDashColors.bgTop,
-            BlockDashColors.bgMid,
-            BlockDashColors.bgBottom,
-          ],
-        ).createShader(full),
-    );
-
-    for (var x = 20.0; x < size.x; x += 48) {
-      for (var y = 0.0; y < size.y; y += 48) {
-        if (x < gridLeft || x > gridLeft + gridWidth) {
-          canvas.drawCircle(Offset(x, y), 1.2, _bgLinePaint);
-        }
-      }
-    }
-
-    final boardRect = Rect.fromLTWH(gridLeft, 0, gridWidth, size.y);
-    canvas.drawRect(boardRect, _trackPaint);
-
-    for (var x = gridLeft + 32; x < gridLeft + gridWidth; x += 32) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.y), _trackLinePaint);
-    }
+    final picture = _backgroundPicture;
+    if (picture != null) canvas.drawPicture(picture);
   }
 
   void _renderBoard(Canvas canvas) {
     final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
+    final cellPicture = _boardCellPicture;
+    if (cellPicture == null) return;
 
-    // OPTIMIZATION: Cache cell rect calculation
     for (var row = firstRow; row <= lastRow; row++) {
       final y = _rowToY(row) - worldScrollY;
       for (var col = 0; col < cols; col++) {
-        final rect = RRect.fromRectAndRadius(
-          Rect.fromLTWH(gridLeft + _cellX(col), y, cellSize, cellSize),
-          const Radius.circular(8),
-        );
-        canvas.drawRRect(rect, _boardCellPaint);
-        canvas.drawRRect(rect, _boardBorderPaint);
+        _drawPictureAt(canvas, cellPicture, gridLeft + _cellX(col), y);
       }
     }
   }
@@ -1330,24 +1912,17 @@ class BlockDashGame extends FlameGame {
 
     // OPTIMIZATION: Only check rows in visible range
     for (var row = firstRow; row <= lastRow; row++) {
-      final rowTrails = trailsByRow[row];
-      if (rowTrails == null) continue;
+      final rowMask = trailsByRow[row] ?? 0;
+      if (rowMask == 0) continue;
 
       final y = _rowToY(row) - worldScrollY;
-      for (final point in rowTrails) {
-        // Row-based rainbow cycling (abs to handle negative rows)
-        final baseColor = palette[row.abs() % palette.length];
-        final muted = Color.fromARGB(
-          200,
-          baseColor.red,
-          baseColor.green,
-          baseColor.blue,
-        );
-        _drawBlock(
-          canvas,
-          Rect.fromLTWH(gridLeft + _cellX(point.col), y, cellSize, cellSize),
-          muted,
-        );
+      final trailColors = _trailBlockColors.isEmpty
+          ? palette
+          : _trailBlockColors;
+      final color = trailColors[row.abs() % trailColors.length];
+      for (var col = 0; col < cols; col++) {
+        if ((rowMask & _colBit(col)) == 0) continue;
+        _drawCachedBlock(canvas, gridLeft + _cellX(col), y, color);
       }
     }
   }
@@ -1358,14 +1933,16 @@ class BlockDashGame extends FlameGame {
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
 
     for (var row = firstRow; row <= lastRow; row++) {
-      final rowHazards = hazardsByRow[row];
-      if (rowHazards == null) continue;
+      final rowMask = hazardsByRow[row] ?? 0;
+      if (rowMask == 0) continue;
 
       final y = _rowToY(row) - worldScrollY;
-      for (final point in rowHazards) {
-        _drawBlock(
+      for (var col = 0; col < cols; col++) {
+        if ((rowMask & _colBit(col)) == 0) continue;
+        _drawCachedBlock(
           canvas,
-          Rect.fromLTWH(gridLeft + _cellX(point.col), y, cellSize, cellSize),
+          gridLeft + _cellX(col),
+          y,
           BlockDashColors.blockRed,
         );
       }
@@ -1373,32 +1950,40 @@ class BlockDashGame extends FlameGame {
   }
 
   void _renderPlayer(Canvas canvas) {
-    final t = (moveElapsed / moveDuration).clamp(0.0, 1.0);
+    final t = isMoving && moveDuration > 0
+        ? (moveElapsed / moveDuration).clamp(0.0, 1.0)
+        : 1.0;
     final x = isMoving
         ? ui.lerpDouble(moveStartX, moveEndX, _ease(t))!
         : _screenX(playerCol);
-    _drawBlock(
+    _drawCachedBlock(
       canvas,
-      Rect.fromLTWH(x, playerScreenY, cellSize, cellSize),
+      x,
+      playerScreenY,
       isDead ? BlockDashColors.blockRed : BlockDashColors.blockCyan,
     );
   }
 
+  void _drawCachedBlock(Canvas canvas, double x, double y, Color color) {
+    final picture = _blockPictures[color];
+    if (picture != null) {
+      _drawPictureAt(canvas, picture, x, y);
+      return;
+    }
+
+    _cacheBlockPicture(color);
+    _drawPictureAt(canvas, _blockPictures[color]!, x, y);
+  }
+
   /// Glossy 3-D block — Block-Blast inspired
-  void _drawBlock(Canvas canvas, Rect rect, Color color) {
+  void _drawBlockRaw(Canvas canvas, Rect rect, Color color) {
     final radius = const Radius.circular(10);
     final rrect = RRect.fromRectAndRadius(rect, radius);
 
     // 1. Drop shadow
     canvas.drawRRect(
       rrect.shift(const Offset(0, 5)),
-      Paint()
-        ..color = Color.fromARGB(
-          130,
-          (color.red * 0.3).round(),
-          (color.green * 0.3).round(),
-          (color.blue * 0.3).round(),
-        ),
+      Paint()..color = _scaleColor(color, 0.3, alpha: 130),
     );
 
     // 2. Bottom-face 3-D depth strip
@@ -1406,24 +1991,10 @@ class BlockDashGame extends FlameGame {
       rect.shift(const Offset(0, 3)),
       radius,
     );
-    canvas.drawRRect(
-      bottomFace,
-      Paint()
-        ..color = Color.fromARGB(
-          255,
-          (color.red * 0.55).round().clamp(0, 255),
-          (color.green * 0.55).round().clamp(0, 255),
-          (color.blue * 0.55).round().clamp(0, 255),
-        ),
-    );
+    canvas.drawRRect(bottomFace, Paint()..color = _scaleColor(color, 0.55));
 
     // 3. Main face — gradient
-    final lightColor = Color.fromARGB(
-      255,
-      math.min(255, color.red + 40),
-      math.min(255, color.green + 40),
-      math.min(255, color.blue + 40),
-    );
+    final lightColor = _lightenColor(color, 40);
     canvas.drawRRect(
       rrect,
       Paint()
@@ -1462,21 +2033,15 @@ class BlockDashGame extends FlameGame {
   }
 
   void _renderParticles(Canvas canvas) {
-    final paint = Paint();
     for (final p in particles) {
       final opacity = (1 - p.age / Particle.life).clamp(0.0, 1.0);
-      paint.color = Color.fromARGB(
-        (opacity * 255).round(),
-        p.color.red,
-        p.color.green,
-        p.color.blue,
-      );
+      _particlePaint.color = _colorWithAlpha(p.color, (opacity * 255).round());
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromCenter(center: p.position, width: 8, height: 8),
           const Radius.circular(3),
         ),
-        paint,
+        _particlePaint,
       );
     }
   }
@@ -1484,42 +2049,44 @@ class BlockDashGame extends FlameGame {
   void _renderScorePopups(Canvas canvas) {
     for (final popup in scorePopups) {
       final progress = (popup.age / ScorePopup.life).clamp(0.0, 1.0);
-      final opacity = (1 - progress).clamp(0.0, 1.0);
       final scale = progress < 0.35
           ? ui.lerpDouble(1, 1.28, progress / 0.35)!
           : ui.lerpDouble(1.28, 0.82, (progress - 0.35) / 0.65)!;
-      final painter = TextPainter(
+      final painter = _scorePainterFor(popup.points);
+      final y = popup.worldPosition.dy - worldScrollY - progress * 70;
+      canvas.save();
+      canvas.translate(popup.worldPosition.dx, y);
+      canvas.scale(scale);
+      painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
+      canvas.restore();
+    }
+  }
+
+  TextPainter _scorePainterFor(int points) {
+    return _scorePopupPainters.putIfAbsent(
+      points,
+      () => TextPainter(
         text: TextSpan(
-          text: '+${popup.points}',
-          style: TextStyle(
-            color: Color.fromARGB(
-              (opacity * 255).round(),
-              BlockDashColors.yellow.red,
-              BlockDashColors.yellow.green,
-              BlockDashColors.yellow.blue,
-            ),
-            fontSize: 28 * scale,
+          text: '+$points',
+          style: const TextStyle(
+            color: BlockDashColors.yellow,
+            fontSize: 28,
             fontWeight: FontWeight.w900,
             shadows: [
               Shadow(
-                offset: const Offset(0, 2),
+                offset: Offset(0, 2),
                 blurRadius: 6,
-                color: Color.fromARGB((0.45 * opacity * 255).round(), 0, 0, 0),
+                color: Color(0x73000000),
               ),
             ],
           ),
         ),
         textDirection: TextDirection.ltr,
-      )..layout();
-      final y = popup.position.dy - progress * 70;
-      painter.paint(
-        canvas,
-        Offset(popup.position.dx - painter.width / 2, y - painter.height / 2),
-      );
-    }
+      )..layout(),
+    );
   }
 
-  // ── Hazard / coin generation ───────────────────────────────────────────────
+  // ── Hazard Generation ──────────────────────────────────────────────────────
 
   void _generateHazardsUntil(int minRow) {
     while (nextHazardRow >= minRow) {
@@ -1527,11 +2094,6 @@ class BlockDashGame extends FlameGame {
       _addHazard(side == 0 ? 0 : cols - 1, nextHazardRow);
       nextHazardRow -= hazardPeriod;
     }
-  }
-
-  void _generateCoinsUntil(int minRow) {
-    if (!coinsActive) return;
-    minRow;
   }
 
   int _pickHazardSide() {
@@ -1550,20 +2112,19 @@ class BlockDashGame extends FlameGame {
 
   // ── Spatial data structure helpers ─────────────────────────────────────────
 
+  int _colBit(int col) => 1 << col;
+
   void _addHazard(int col, int row) {
-    final point = GridPoint(col, row);
-    hazardsByRow.putIfAbsent(row, () => []).add(point);
+    hazardsByRow[row] = (hazardsByRow[row] ?? 0) | _colBit(col);
   }
 
   void _placeTrail(int col, int row) {
-    final point = GridPoint(col, row);
-    trailsByRow.putIfAbsent(row, () => []).add(point);
+    trailsByRow[row] = (trailsByRow[row] ?? 0) | _colBit(col);
   }
 
   bool _hasHazardAt(int col, int row) {
-    final rowHazards = hazardsByRow[row];
-    if (rowHazards == null) return false;
-    return rowHazards.any((p) => p.col == col);
+    final rowMask = hazardsByRow[row] ?? 0;
+    return (rowMask & _colBit(col)) != 0;
   }
 
   void _placeTrailPath(int fromCol, int fromRow, int colDelta, int steps) {
@@ -1583,7 +2144,6 @@ class BlockDashGame extends FlameGame {
     // Remove all rows beyond cutoff
     trailsByRow.removeWhere((r, _) => r > cutoff);
     hazardsByRow.removeWhere((r, _) => r > cutoff);
-    coinsByRow.removeWhere((r, _) => r > cutoff);
   }
 
   // ── Combo ──────────────────────────────────────────────────────────────────
@@ -1594,7 +2154,10 @@ class BlockDashGame extends FlameGame {
     maxCombo = math.max(maxCombo, comboCount);
     comboTimeLeft = comboTimeout;
     comboNotifier.value = comboCount;
-    if (comboCount >= 3) _playSound('combo.wav');
+    if (comboCount >= 3 && comboSoundCooldown <= 0) {
+      comboSoundCooldown = 0.22;
+      _playSound('combo.wav');
+    }
   }
 
   int _comboMultiplier() {
@@ -1620,8 +2183,8 @@ class BlockDashGame extends FlameGame {
 
   void _syncTimerNotifier({bool force = false}) {
     final ratio = (timerValue / timerMax).clamp(0.0, 1.0);
-    final changedEnough = (ratio - lastTimerRatio).abs() >= 0.006;
-    if (force || changedEnough || timerNotifyElapsed >= 1 / 30) {
+    final changedEnough = (ratio - lastTimerRatio).abs() >= 0.01;
+    if (force || changedEnough || timerNotifyElapsed >= 1 / 20) {
       lastTimerRatio = ratio;
       timerNotifyElapsed = 0;
       timerNotifier.value = ratio;
@@ -1641,7 +2204,7 @@ class BlockDashGame extends FlameGame {
     if (isDead) return;
     isDead = true;
     shakeTimeLeft = 0.5;
-    HapticFeedback.heavyImpact();
+    _playHapticHeavy();
     _playSound('death.wav');
     final isNewBest = score > bestScore;
     if (isNewBest) {
@@ -1660,23 +2223,19 @@ class BlockDashGame extends FlameGame {
   // ── Particles ──────────────────────────────────────────────────────────────
 
   void _spawnParticles(double x, double y) {
-    const colors = [
-      BlockDashColors.blockRed,
-      BlockDashColors.orange,
-      BlockDashColors.yellow,
-      BlockDashColors.blockGreen,
-      BlockDashColors.blockCyan,
-      BlockDashColors.blockBlue,
-      BlockDashColors.blockPurple,
-    ];
-    for (var i = 0; i < 12; i++) {
-      final angle = math.pi * 2 * i / 12;
+    final overflow = particles.length + particleBurstCount - maxParticles;
+    if (overflow > 0) {
+      particles.removeRange(0, math.min(overflow, particles.length));
+    }
+
+    for (var i = 0; i < particleBurstCount; i++) {
+      final angle = math.pi * 2 * i / particleBurstCount;
       final speed = 70 + random.nextDouble() * 65;
       particles.add(
         Particle(
           position: Offset(x, y),
           velocity: Offset(math.cos(angle) * speed, math.sin(angle) * speed),
-          color: colors[random.nextInt(colors.length)],
+          color: _particleColors[random.nextInt(_particleColors.length)],
         ),
       );
     }
@@ -1712,5 +2271,20 @@ class BlockDashGame extends FlameGame {
     );
   }
 
-  void _playSound(String fileName) => FlameAudio.play(fileName, volume: 0.65);
+  void _playHapticSelection() {
+    if (_GameSettings.vibrationEnabled(prefs)) {
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  void _playHapticHeavy() {
+    if (_GameSettings.vibrationEnabled(prefs)) {
+      HapticFeedback.heavyImpact();
+    }
+  }
+
+  void _playSound(String fileName) {
+    if (!_GameSettings.sfxEnabled(prefs)) return;
+    FlameAudio.play(fileName, volume: 0.65);
+  }
 }
