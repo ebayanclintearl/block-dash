@@ -43,17 +43,12 @@ class BlockDashApp extends StatelessWidget {
 
 // ─── Colour Palette ────────────────────────────────────────────────────────────
 class BlockDashColors {
-  // Background blues
   static const bgTop = Color(0xFF1255CC);
   static const bgMid = Color(0xFF1A6AD8);
   static const bgBottom = Color(0xFF3A9AEF);
-
-  // Board / grid
   static const board = Color(0xFF183080);
   static const boardCell = Color(0xFF1C3A96);
   static const boardBorder = Color(0xFF2654BC);
-
-  // Accent / UI
   static const cyan = Color(0xFF00C8F0);
   static const blue = Color(0xFF1E72E8);
   static const yellow = Color(0xFFFFD600);
@@ -61,8 +56,6 @@ class BlockDashColors {
   static const red = Color(0xFFEF3030);
   static const green = Color(0xFF43C447);
   static const purple = Color(0xFF9C3FD8);
-
-  // Block colours (glossy set)
   static const blockCyan = Color(0xFF14C8F0);
   static const blockRed = Color(0xFFEF3030);
   static const blockGreen = Color(0xFF30C050);
@@ -70,23 +63,27 @@ class BlockDashColors {
   static const blockPurple = Color(0xFF9B3FE0);
   static const blockOrange = Color(0xFFFF7030);
   static const blockBlue = Color(0xFF2080FF);
-
-  // Pre-baked semi-transparent tones
   static const shadow18 = Color(0x2D000000);
   static const shadow28 = Color(0x47000000);
   static const shadow45 = Color(0x73000000);
   static const white12 = Color(0x1FFFFFFF);
   static const white30 = Color(0x4DFFFFFF);
   static const white55 = Color(0x8CFFFFFF);
-
-  // Rainbow trail palette (subtle, desaturated slightly so they don't overpower)
   static const List<Color> trailRainbow = [
-    Color(0xFF3A8CFF), // blue
-    Color(0xFF10C8F0), // cyan
-    Color(0xFF38C048), // green
-    Color(0xFFE8C000), // yellow
-    Color(0xFFFF6828), // orange
-    Color(0xFFB050EE), // purple
+    Color(0xFF3A8CFF),
+    Color(0xFF10C8F0),
+    Color(0xFF38C048),
+    Color(0xFFE8C000),
+    Color(0xFFFF6828),
+    Color(0xFFB050EE),
+  ];
+  static const List<Color> mutedTrailRainbow = [
+    Color(0xC83A8CFF),
+    Color(0xC810C8F0),
+    Color(0xC838C048),
+    Color(0xC8E8C000),
+    Color(0xC8FF6828),
+    Color(0xC8B050EE),
   ];
 }
 
@@ -183,7 +180,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   _SubTag(text: 'STACK · DODGE · WIN'),
                   const Spacer(flex: 2),
-                  // PLAY button — orange pill matching Block Blast style
                   _BigButton(
                     label: 'PLAY',
                     icon: Icons.play_arrow_rounded,
@@ -202,7 +198,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  // RATE US button — green pill
                   _BigButton(
                     label: 'RATE US',
                     icon: Icons.star_rate_rounded,
@@ -755,7 +750,7 @@ class _SubTag extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 15,
           fontWeight: FontWeight.w800,
@@ -766,7 +761,7 @@ class _SubTag extends StatelessWidget {
   }
 }
 
-// ─── Shared Big Button — Block Blast pill style ────────────────────────────────
+// ─── Shared Big Button ─────────────────────────────────────────────────────────
 class _BigButton extends StatelessWidget {
   const _BigButton({
     required this.label,
@@ -789,15 +784,13 @@ class _BigButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final h = tall ? 84.0 : 68.0;
-    // Darker bottom shade for 3-D depth
     final darkColor = _scaleColor(color, 0.68);
 
     return SizedBox(
       width: double.infinity,
-      height: h + 6, // extra for bottom-face depth
+      height: h + 6,
       child: Stack(
         children: [
-          // Bottom-face depth (3-D pill illusion)
           Positioned(
             bottom: 0,
             left: 0,
@@ -810,7 +803,6 @@ class _BigButton extends StatelessWidget {
               ),
             ),
           ),
-          // Main button face (sits 4px above bottom)
           Positioned(
             top: 0,
             left: 0,
@@ -830,7 +822,6 @@ class _BigButton extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [accentColor, color],
-                        stops: const [0.0, 1.0],
                       ),
                       borderRadius: BorderRadius.circular(h / 2),
                       boxShadow: [
@@ -843,7 +834,6 @@ class _BigButton extends StatelessWidget {
                     ),
                     child: Stack(
                       children: [
-                        // Top gloss strip — pill shaped
                         Positioned(
                           top: 5,
                           left: h * 0.6,
@@ -856,7 +846,6 @@ class _BigButton extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // Icon + Label
                         Center(
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -1025,10 +1014,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _ensureGameLoaded(Size size) {
-    if (_gameLoadFuture != null) {
-      return _gameLoadFuture!;
-    }
-
+    if (_gameLoadFuture != null) return _gameLoadFuture!;
     _gameLoadFuture = _loadGame(size);
     return _gameLoadFuture!;
   }
@@ -1058,19 +1044,16 @@ class _GameScreenState extends State<GameScreen> {
                 if (snapshot.hasError) {
                   return _GameLoadingView(error: snapshot.error);
                 }
-
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const _GameLoadingView();
                 }
 
                 return Stack(
                   children: [
-                    // Flame game
                     GameWidget(
                       game: _game,
                       loadingBuilder: (_) => const _GameLoadingView(),
                     ),
-                    // Tap zones
                     Positioned.fill(
                       child: Row(
                         children: [
@@ -1100,8 +1083,11 @@ class _GameScreenState extends State<GameScreen> {
                             const SizedBox(height: 8),
                             _TimerBar(game: _game),
                             const SizedBox(height: 20),
-                            // FIX: fixed-height slot so layout never shifts
+                            // Fixed-height slot for combo — no layout shift
                             _ComboPopup(game: _game),
+                            const SizedBox(height: 4),
+                            // Status banner for fever / last-chance / milestone
+                            _StatusBanner(game: _game),
                           ],
                         ),
                       ),
@@ -1198,7 +1184,6 @@ class GameOverScreen extends StatelessWidget {
               const Spacer(),
               _ScorePanel(result: result),
               const Spacer(),
-              // Play Again — orange pill
               _BigButton(
                 label: 'PLAY AGAIN',
                 icon: Icons.replay_rounded,
@@ -1213,7 +1198,6 @@ class GameOverScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              // Home — green pill
               _BigButton(
                 label: 'HOME',
                 icon: Icons.home_rounded,
@@ -1319,6 +1303,17 @@ class _ScorePanel extends StatelessWidget {
               ),
             ),
           ],
+          if (result.maxCombo > 0) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Best Combo: ${result.maxCombo}x',
+              style: const TextStyle(
+                color: Color(0xCCB0D8FF),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1361,7 +1356,44 @@ class _GameHud extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 80),
+        // Fever flame icon — only visible in fever mode
+        RepaintBoundary(
+          child: ValueListenableBuilder<bool>(
+            valueListenable: game.feverNotifier,
+            builder: (_, fever, _) => SizedBox(
+              width: 36,
+              child: fever
+                  ? const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Color(0xFFFF6020),
+                      size: 30,
+                      shadows: [
+                        Shadow(blurRadius: 8, color: Color(0xAAFF4000)),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ),
+        // Shield icon — shown while last-chance is available
+        RepaintBoundary(
+          child: ValueListenableBuilder<bool>(
+            valueListenable: game.lastChanceNotifier,
+            builder: (_, hasShield, _) => SizedBox(
+              width: 32,
+              child: hasShield
+                  ? const Icon(
+                      Icons.shield_rounded,
+                      color: Color(0xFF60D8FF),
+                      size: 22,
+                      shadows: [
+                        Shadow(blurRadius: 6, color: Color(0x8800D0FF)),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1396,7 +1428,7 @@ class _CrownScore extends StatelessWidget {
   }
 }
 
-// ─── Timer Bar — FIXED: DecoratedBox now has a sized child ────────────────────
+// ─── Timer Bar ─────────────────────────────────────────────────────────────────
 class _TimerBar extends StatelessWidget {
   const _TimerBar({required this.game});
 
@@ -1468,11 +1500,12 @@ class _TimerBar extends StatelessWidget {
   }
 }
 
-// ─── Combo Popup — FIXED: fixed-height slot prevents layout thrash ─────────────
+// ─── Combo Popup — shows fever state when active ────────────────────────────────
 class _ComboPopup extends StatelessWidget {
   const _ComboPopup({required this.game});
 
-  static const _popupDecoration = BoxDecoration(
+  // Standard yellow/orange combo pill
+  static const _comboDecoration = BoxDecoration(
     gradient: LinearGradient(
       colors: [Color(0xFFFFE566), BlockDashColors.orange],
     ),
@@ -1480,32 +1513,82 @@ class _ComboPopup extends StatelessWidget {
     border: Border.fromBorderSide(BorderSide(color: Color(0x66FFFFFF))),
   );
 
+  // Hot red/pink fever pill — same shape, hotter palette
+  static const _feverDecoration = BoxDecoration(
+    gradient: LinearGradient(colors: [Color(0xFFFF6020), Color(0xFFFF1880)]),
+    borderRadius: BorderRadius.all(Radius.circular(15)),
+    border: Border.fromBorderSide(BorderSide(color: Color(0x77FFFFFF))),
+  );
+
   final BlockDashGame game;
 
   @override
   Widget build(BuildContext context) {
-    // Keep the slot fixed, but avoid opacity layers/blur while the game is
-    // rendering. Combo changes should repaint once, not animate every frame.
     return SizedBox(
       height: 36,
       child: RepaintBoundary(
-        child: ValueListenableBuilder<int>(
-          valueListenable: game.comboNotifier,
-          builder: (_, combo, _) {
+        child: ListenableBuilder(
+          listenable: Listenable.merge([
+            game.comboNotifier,
+            game.feverNotifier,
+          ]),
+          builder: (_, _) {
+            final combo = game.comboNotifier.value;
+            final fever = game.feverNotifier.value;
             if (combo < 3) return const SizedBox.shrink();
             return Center(
               child: Container(
                 height: 30,
                 padding: const EdgeInsets.symmetric(horizontal: 18),
-                decoration: _popupDecoration,
+                decoration: fever ? _feverDecoration : _comboDecoration,
                 alignment: Alignment.center,
                 child: Text(
-                  '${combo}x COMBO!',
+                  fever ? '🔥 ${combo}x FEVER!' : '${combo}x COMBO!',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Status Banner — fever / last-chance / milestone messages ─────────────────
+class _StatusBanner extends StatelessWidget {
+  const _StatusBanner({required this.game});
+
+  final BlockDashGame game;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 28,
+      child: RepaintBoundary(
+        child: ValueListenableBuilder<String>(
+          valueListenable: game.statusNotifier,
+          builder: (_, status, _) {
+            if (status.isEmpty) return const SizedBox.shrink();
+            return Center(
+              child: Text(
+                status,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 2),
+                      blurRadius: 6,
+                      color: Color(0x88000000),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -1547,10 +1630,12 @@ class GameResult {
     required this.score,
     required this.bestScore,
     required this.isNewBest,
+    required this.maxCombo,
   });
   final int score;
   final int bestScore;
   final bool isNewBest;
+  final int maxCombo;
 }
 
 // ─── Flame Game ────────────────────────────────────────────────────────────────
@@ -1561,10 +1646,22 @@ class BlockDashGame extends FlameGame {
   }
 
   static final _identityMatrix4 = Float64List.fromList([
-    1, 0, 0, 0, //
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
   ]);
 
   static const _bestScoreKey = 'blockDashBest';
@@ -1574,16 +1671,50 @@ class BlockDashGame extends FlameGame {
   static const hazardPeriod = 5;
   static const hazardOffset = 6;
   static const lookAheadRows = 80;
-  static const cleanupBehindRows = 30; // OPTIMIZED: Reduced from 80 to 30
+  static const cleanupBehindRows = 30;
   static const timerMax = 100.0;
   static const baseTimerDrain = 22.0;
   static const maxTimerDrain = 62.0;
   static const timerRefill = 35.0;
-  static const comboTimeout = 1.5;
+  // ── ARCADE: combo timeout extended for easier chaining ──
+  static const comboTimeout = 2.0;
   static const cameraFollowStrength = 12.0;
+  static final _cameraFollowFactor = 1 - math.exp(-cameraFollowStrength / 60.0);
   static const maxParticles = 40;
   static const particleBurstCount = 8;
   static const maxScorePopupPainters = 20;
+
+  // ── NEW: Arcade mechanic constants ─────────────────────────────────────────
+  /// Rows between bonus (gold) block spawns.
+  static const bonusPeriod = 14;
+
+  /// Score awarded per collected bonus block.
+  static const bonusScore = 75;
+
+  /// Timer units refilled on bonus block collection.
+  static const bonusTimerRefill = 28.0;
+
+  /// Combo count needed to enter Fever mode.
+  static const feverComboThreshold = 8;
+
+  /// In Fever mode the drain rate is multiplied by this factor (<1 = slower drain).
+  static const feverDrainFactor = 0.6;
+
+  /// Score multiple at which a milestone bonus fires (full timer refill).
+  static const milestoneInterval = 100;
+
+  /// Minimum combo to be rescued by Last Chance.
+  static const lastChanceMinCombo = 5;
+
+  /// Timer units restored by the Last Chance save.
+  static const lastChanceTimerAmount = 42.0;
+
+  /// Points awarded for landing directly adjacent to a hazard.
+  static const nearMissBonus = 8;
+
+  /// Probability that a hazard row gets a blocker on BOTH edges.
+  static const doubleHazardChance = 0.15;
+
   static const _particleColors = [
     BlockDashColors.blockRed,
     BlockDashColors.orange,
@@ -1596,14 +1727,28 @@ class BlockDashGame extends FlameGame {
 
   final SharedPreferences prefs;
   final void Function(GameResult result) onGameOver;
+
+  // ── Notifiers ──────────────────────────────────────────────────────────────
   final ValueNotifier<int> scoreNotifier = ValueNotifier<int>(0);
   final ValueNotifier<int> bestNotifier = ValueNotifier<int>(0);
   final ValueNotifier<double> timerNotifier = ValueNotifier<double>(1);
   final ValueNotifier<int> comboNotifier = ValueNotifier<int>(0);
 
-  // Row bitmasks keep the infinite grid compact and allocation-light.
+  /// True while Fever mode is active (UI uses this to style the combo pill).
+  final ValueNotifier<bool> feverNotifier = ValueNotifier<bool>(false);
+
+  /// True while the player still has their Last Chance shield.
+  final ValueNotifier<bool> lastChanceNotifier = ValueNotifier<bool>(true);
+
+  /// Temporary status text (Fever!, Last Chance!, Score Bonus!).
+  final ValueNotifier<String> statusNotifier = ValueNotifier<String>('');
+
+  // ── Spatial data ───────────────────────────────────────────────────────────
   final hazardsByRow = SplayTreeMap<int, int>();
   final trailsByRow = SplayTreeMap<int, int>();
+
+  /// Bonus (gold) block positions — same bitmask convention as hazards/trails.
+  final bonusByRow = SplayTreeMap<int, int>();
 
   final particles = <Particle>[];
   final scorePopups = <ScorePopup>[];
@@ -1613,16 +1758,41 @@ class BlockDashGame extends FlameGame {
   final _particlePaint = Paint();
   final _particleBatchPath = Path();
   final _blockPictures = <Color, ui.Picture>{};
-  final _trailBlockColors = <Color>[];
   ui.Image? _backgroundImage;
   ui.Image? _boardRowImage;
   final _boardPatternPaint = Paint();
   bool _layoutReady = false;
 
+  // Pre-allocated paints (never create Paint in render/update hot path)
+  final _boardCellPaint = Paint()..color = BlockDashColors.boardCell;
+  final _boardBorderPaint = Paint()
+    ..color = const Color(0x202654BC)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
+  final _trackPaint = Paint()..color = BlockDashColors.board;
+  final _bgLinePaint = Paint()
+    ..color = const Color(0x0CFFFFFF)
+    ..strokeWidth = 1;
+  final _trackLinePaint = Paint()
+    ..color = const Color(0x142654BC)
+    ..strokeWidth = 1;
+
+  /// Pre-allocated for the fever edge-glow overlay.
+  final _feverEdgePaint = Paint();
+
+  /// Pre-allocated for the full-screen flash (milestone / last-chance).
+  final _flashPaint = Paint();
+
+  AudioPool? _moveSoundPool;
+  AudioPool? _comboSoundPool;
+
+  // ── Layout ─────────────────────────────────────────────────────────────────
   late double cellSize;
   late double rowHeight;
   late double gridWidth;
   late double gridLeft;
+
+  // ── Camera / player state ──────────────────────────────────────────────────
   late double worldScrollY;
   late double cameraTargetScrollY;
   late double playerWorldY;
@@ -1632,18 +1802,36 @@ class BlockDashGame extends FlameGame {
   late int nextHazardRow;
   int? lastHazardSide;
   int? secondLastHazardSide;
+  late int nextBonusRow;
 
+  // ── Score / combo ──────────────────────────────────────────────────────────
   int score = 0;
   int bestScore;
   int comboCount = 0;
   int maxCombo = 0;
   double comboTimeLeft = 0;
   String? lastComboMove;
+
+  // ── Fever mode ─────────────────────────────────────────────────────────────
+  bool isFeverMode = false;
+  double feverPulse = 0;
+
+  // ── Milestones / last chance ───────────────────────────────────────────────
+  int lastMilestone = 0;
+  bool hasLastChance = true;
+
+  // ── Screen flash ───────────────────────────────────────────────────────────
+  double screenFlashAlpha = 0;
+  Color _screenFlashColor = Colors.white;
+
+  // ── Timer / difficulty ─────────────────────────────────────────────────────
   double timerValue = timerMax;
   double lastTimerRatio = 1;
   double timerNotifyElapsed = 0;
   double currentSpeed = baseMoveSeconds;
   double currentDrain = baseTimerDrain;
+
+  // ── Move animation ─────────────────────────────────────────────────────────
   bool isMoving = false;
   bool isDead = false;
   double moveElapsed = 0;
@@ -1657,26 +1845,14 @@ class BlockDashGame extends FlameGame {
   int pendingRow = 0;
   int pendingSteps = 0;
   bool pendingDeath = false;
+  int pendingBonusCollects = 0;
+
+  // ── Effects ────────────────────────────────────────────────────────────────
   Offset shakeOffset = Offset.zero;
   double shakeTimeLeft = 0;
   double comboSoundCooldown = 0;
 
-  // Pre-baked paints
-  final _boardCellPaint = Paint()..color = BlockDashColors.boardCell;
-  final _boardBorderPaint = Paint()
-    ..color = const Color(0x202654BC)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1;
-  final _trackPaint = Paint()..color = BlockDashColors.board;
-
-  final _bgLinePaint = Paint()
-    ..color = const Color(0x0CFFFFFF)
-    ..strokeWidth = 1;
-  final _trackLinePaint = Paint()
-    ..color = const Color(0x142654BC)
-    ..strokeWidth = 1;
-  AudioPool? _moveSoundPool;
-  AudioPool? _comboSoundPool;
+  Timer? _statusTimer;
 
   @override
   Color backgroundColor() => BlockDashColors.bgTop;
@@ -1695,6 +1871,7 @@ class BlockDashGame extends FlameGame {
 
   @override
   void onRemove() {
+    _statusTimer?.cancel();
     _disposeRenderCache();
     _disposeScorePopupPainters();
     _disposeAudioPools();
@@ -1702,6 +1879,9 @@ class BlockDashGame extends FlameGame {
     bestNotifier.dispose();
     timerNotifier.dispose();
     comboNotifier.dispose();
+    feverNotifier.dispose();
+    lastChanceNotifier.dispose();
+    statusNotifier.dispose();
     super.onRemove();
   }
 
@@ -1723,20 +1903,31 @@ class BlockDashGame extends FlameGame {
     _computeLayout();
     hazardsByRow.clear();
     trailsByRow.clear();
+    bonusByRow.clear();
     particles.clear();
     scorePopups.clear();
     _disposeScorePopupPainters();
+
     playerCol = 2;
-    playerRow = 0; // INFINITE: Start at row 0 instead of totalRows-1
-    nextHazardRow =
-        -hazardOffset; // INFINITE: Generate hazards ahead (negative rows)
+    playerRow = 0;
+    nextHazardRow = -hazardOffset;
+    nextBonusRow = -10; // first bonus block a bit deeper than first hazard
     lastHazardSide = null;
     secondLastHazardSide = null;
+
     score = 0;
     comboCount = 0;
     maxCombo = 0;
     comboTimeLeft = 0;
     lastComboMove = null;
+
+    isFeverMode = false;
+    feverPulse = 0;
+    lastMilestone = 0;
+    hasLastChance = true;
+    screenFlashAlpha = 0;
+    pendingBonusCollects = 0;
+
     timerValue = timerMax;
     lastTimerRatio = 1;
     timerNotifyElapsed = 0;
@@ -1746,16 +1937,25 @@ class BlockDashGame extends FlameGame {
     isDead = false;
     cachedEasedMoveT = 1;
     comboSoundCooldown = 0;
+    shakeOffset = Offset.zero;
+
     playerWorldY = _rowToY(playerRow);
     playerScreenY = size.y - cellSize - 20;
     worldScrollY = playerWorldY - playerScreenY;
     cameraTargetScrollY = worldScrollY;
+
     scoreNotifier.value = 0;
     bestNotifier.value = bestScore;
     _syncTimerNotifier(force: true);
     comboNotifier.value = 0;
-    shakeOffset = Offset.zero;
+    feverNotifier.value = false;
+    lastChanceNotifier.value = true;
+    statusNotifier.value = '';
+    _statusTimer?.cancel();
+
+    // Generate hazards first so bonus generation can avoid them
     _generateHazardsUntil(-lookAheadRows);
+    _generateBonusUntil(-lookAheadRows);
     _placeTrail(playerCol, playerRow);
   }
 
@@ -1782,9 +1982,11 @@ class BlockDashGame extends FlameGame {
           : playerCol;
     }
 
-    // INFINITE: Generate hazards ahead dynamically (rows get more negative)
+    // Generate ahead — hazards first so bonus can check them
     _generateHazardsUntil(playerRow - totalSteps - lookAheadRows);
+    _generateBonusUntil(playerRow - totalSteps - lookAheadRows);
 
+    // Determine how far the player can travel (stop at hazard)
     var hitStep = -1;
     var c = playerCol;
     var r = playerRow;
@@ -1801,6 +2003,19 @@ class BlockDashGame extends FlameGame {
     final destCol = (playerCol + colDelta * steps).clamp(0, cols - 1);
     final destRow = playerRow - steps;
     final duration = math.max(0.16, currentSpeed * steps / totalSteps);
+
+    // Collect any bonus blocks along the path
+    pendingBonusCollects = 0;
+    var pc = playerCol;
+    var pr = playerRow;
+    for (var i = 0; i < steps; i++) {
+      pc = (pc + colDelta).clamp(0, cols - 1);
+      pr--;
+      if (_hasBonusAt(pc, pr)) {
+        pendingBonusCollects++;
+        _removeBonusAt(pc, pr);
+      }
+    }
 
     _increaseCombo(moveKind);
     _playSound('move.wav');
@@ -1838,6 +2053,15 @@ class BlockDashGame extends FlameGame {
     _updateParticles(dt);
     _updateScorePopups(dt);
     _updateShake(dt);
+
+    // Fever pulse (used for edge-glow animation)
+    if (isFeverMode) feverPulse += dt * 5.0;
+
+    // Fade out screen flash
+    if (screenFlashAlpha > 0) {
+      screenFlashAlpha = math.max(0, screenFlashAlpha - dt * 3.0);
+    }
+
     if (comboSoundCooldown > 0) {
       comboSoundCooldown = math.max(0, comboSoundCooldown - dt);
     }
@@ -1849,11 +2073,15 @@ class BlockDashGame extends FlameGame {
       if (comboTimeLeft <= 0) _resetCombo();
     }
 
-    timerValue = math.max(0, timerValue - currentDrain * dt);
+    // In Fever mode the timer drains more slowly (reward for skilled play)
+    final effectiveDrain = isFeverMode
+        ? currentDrain * feverDrainFactor
+        : currentDrain;
+    timerValue = math.max(0, timerValue - effectiveDrain * dt);
     timerNotifyElapsed += dt;
     _syncTimerNotifier();
     if (timerValue <= 0) {
-      _triggerDeath();
+      unawaited(_triggerDeath());
       return;
     }
 
@@ -1879,6 +2107,7 @@ class BlockDashGame extends FlameGame {
         );
         _cleanupRowsBehind(playerRow);
 
+        // Base move score
         final movePoints = (pendingSteps + 1) * _comboMultiplier();
         score += movePoints;
         scoreNotifier.value = score;
@@ -1891,12 +2120,78 @@ class BlockDashGame extends FlameGame {
             points: movePoints,
           ),
         );
+
+        // ── Bonus block rewards ────────────────────────────────────────────
+        if (pendingBonusCollects > 0) {
+          final bonusPoints = pendingBonusCollects * bonusScore;
+          score += bonusPoints;
+          scoreNotifier.value = score;
+          timerValue = math.min(
+            timerMax,
+            timerValue + bonusTimerRefill * pendingBonusCollects,
+          );
+          _syncTimerNotifier(force: true);
+          scorePopups.add(
+            ScorePopup(
+              worldPosition: Offset(
+                moveEndX + cellSize / 2,
+                playerWorldY - cellSize * 1.2,
+              ),
+              points: bonusPoints,
+            ),
+          );
+          if (comboSoundCooldown <= 0) {
+            _playSound('combo.wav');
+            comboSoundCooldown = 0.3;
+          }
+          _triggerScreenFlash(BlockDashColors.blockYellow, 0.28);
+          _playHapticHeavy();
+          pendingBonusCollects = 0;
+        }
+
+        // ── Near-miss bonus ────────────────────────────────────────────────
+        // Award points for landing directly adjacent to a hazard row.
+        if (!pendingDeath) {
+          final leftAdj = playerCol - 1;
+          final rightAdj = playerCol + 1;
+          final nearMiss =
+              (leftAdj >= 0 && _hasHazardAt(leftAdj, playerRow)) ||
+              (rightAdj < cols && _hasHazardAt(rightAdj, playerRow));
+          if (nearMiss) {
+            score += nearMissBonus;
+            scoreNotifier.value = score;
+            scorePopups.add(
+              ScorePopup(
+                worldPosition: Offset(
+                  moveEndX + cellSize / 2,
+                  playerWorldY - cellSize * 0.6,
+                ),
+                points: nearMissBonus,
+              ),
+            );
+          }
+        }
+
+        // ── Score milestone bonus ──────────────────────────────────────────
+        final milestone = score ~/ milestoneInterval;
+        if (milestone > lastMilestone) {
+          lastMilestone = milestone;
+          timerValue = timerMax; // full refill as reward
+          _syncTimerNotifier(force: true);
+          _triggerScreenFlash(Colors.white, 0.5);
+          if (comboSoundCooldown <= 0) {
+            _playSound('combo.wav');
+            comboSoundCooldown = 0.3;
+          }
+          _setStatus('🎯  ${milestone * milestoneInterval}  SCORE BONUS!');
+        }
+
         _updateDifficulty();
-        if (pendingDeath) _triggerDeath();
+        if (pendingDeath) unawaited(_triggerDeath(byHazard: true));
       }
     }
 
-    _updateCamera(dt);
+    _updateCamera();
   }
 
   @override
@@ -1906,7 +2201,6 @@ class BlockDashGame extends FlameGame {
       _renderScene(canvas);
       return;
     }
-
     canvas.save();
     canvas.translate(shakeOffset.dx, shakeOffset.dy);
     _renderScene(canvas);
@@ -1918,9 +2212,12 @@ class BlockDashGame extends FlameGame {
     _renderBoard(canvas);
     _renderTrails(canvas);
     _renderHazards(canvas);
+    _renderBonusBlocks(canvas); // ← NEW: gold collectibles
     _renderParticles(canvas);
     _renderPlayer(canvas);
     _renderScorePopups(canvas);
+    _renderFeverOverlay(canvas); // ← NEW: warm edge glow in fever
+    _renderScreenFlash(canvas); // ← NEW: milestone / last-chance flash
   }
 
   void _computeLayout() {
@@ -1953,18 +2250,16 @@ class BlockDashGame extends FlameGame {
   }
 
   double get _cameraAnchorY => size.y * 0.50;
-
   double _cellX(int col) => _cellXs[col];
   double _rowToY(int row) => gap + row * rowHeight;
   double _screenX(int col) => gridLeft + _cellX(col);
 
-  void _updateCamera(double dt) {
+  void _updateCamera() {
     final delta = cameraTargetScrollY - worldScrollY;
     if (delta.abs() < 0.05) {
       worldScrollY = cameraTargetScrollY;
     } else {
-      final follow = 1 - math.exp(-cameraFollowStrength * dt);
-      worldScrollY += delta * follow;
+      worldScrollY += delta * _cameraFollowFactor;
     }
     playerScreenY = playerWorldY - worldScrollY;
   }
@@ -1984,7 +2279,6 @@ class BlockDashGame extends FlameGame {
     _boardRowImage = null;
     _boardPatternPaint.shader = null;
     _blockPictures.clear();
-    _trailBlockColors.clear();
   }
 
   void _rebuildRenderCache() {
@@ -2058,12 +2352,9 @@ class BlockDashGame extends FlameGame {
 
     _cacheBlockPicture(BlockDashColors.blockCyan);
     _cacheBlockPicture(BlockDashColors.blockRed);
-    // Every trail color must be warmed here; render-time cache misses are
-    // deliberately ignored so PictureRecorder never runs during gameplay.
-    for (final baseColor in BlockDashColors.trailRainbow) {
-      final muted = _colorWithAlpha(baseColor, 200);
-      _trailBlockColors.add(muted);
-      _cacheBlockPicture(muted);
+    _cacheBlockPicture(BlockDashColors.blockYellow); // bonus blocks
+    for (final color in BlockDashColors.mutedTrailRainbow) {
+      _cacheBlockPicture(color);
     }
   }
 
@@ -2096,13 +2387,11 @@ class BlockDashGame extends FlameGame {
     int rowMask,
   ) {
     if (rowMask == 0) return;
-
     canvas.save();
     canvas.translate(gridLeft, y);
     var currentX = 0.0;
     for (var col = 0; col < cols; col++) {
       if ((rowMask & _colBit(col)) == 0) continue;
-
       final x = _cellX(col);
       canvas.translate(x - currentX, 0);
       currentX = x;
@@ -2131,19 +2420,13 @@ class BlockDashGame extends FlameGame {
     canvas.restore();
   }
 
-  /// OPTIMIZED: Only iterate through visible rows instead of all trails
   void _renderTrails(Canvas canvas) {
-    final trailColors = _trailBlockColors;
-    if (trailColors.isEmpty) return;
-
+    const trailColors = BlockDashColors.mutedTrailRainbow;
     final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
-
-    // OPTIMIZATION: Only check rows in visible range
     for (var row = firstRow; row <= lastRow; row++) {
       final rowMask = trailsByRow[row] ?? 0;
       if (rowMask == 0) continue;
-
       final y = _rowToY(row) - worldScrollY;
       final color = trailColors[row.abs() % trailColors.length];
       final picture = _cachedBlockPictureFor(color);
@@ -2152,20 +2435,56 @@ class BlockDashGame extends FlameGame {
     }
   }
 
-  /// OPTIMIZED: Only iterate through visible rows
   void _renderHazards(Canvas canvas) {
     final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
-
     for (var row = firstRow; row <= lastRow; row++) {
       final rowMask = hazardsByRow[row] ?? 0;
       if (rowMask == 0) continue;
-
       final y = _rowToY(row) - worldScrollY;
       final picture = _cachedBlockPictureFor(BlockDashColors.blockRed);
       if (picture == null) continue;
       _drawPictureRow(canvas, picture, y, rowMask);
     }
+  }
+
+  /// NEW: Render gold bonus blocks in the visible area.
+  void _renderBonusBlocks(Canvas canvas) {
+    final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
+    final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
+    for (var row = firstRow; row <= lastRow; row++) {
+      final rowMask = bonusByRow[row] ?? 0;
+      if (rowMask == 0) continue;
+      final y = _rowToY(row) - worldScrollY;
+      final picture = _cachedBlockPictureFor(BlockDashColors.blockYellow);
+      if (picture == null) continue;
+      _drawPictureRow(canvas, picture, y, rowMask);
+    }
+  }
+
+  /// NEW: Pulsing warm edge-glow visible during Fever mode.
+  void _renderFeverOverlay(Canvas canvas) {
+    if (!isFeverMode) return;
+    final pulse = math.sin(feverPulse) * 0.5 + 0.5; // 0..1
+    final alpha = (pulse * 50).round();
+    _feverEdgePaint.color = Color.fromARGB(alpha, 255, 70, 0);
+    const edgeW = 32.0;
+    final w = size.x;
+    final h = size.y;
+    canvas.drawRect(Rect.fromLTWH(0, 0, edgeW, h), _feverEdgePaint);
+    canvas.drawRect(Rect.fromLTWH(w - edgeW, 0, edgeW, h), _feverEdgePaint);
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, edgeW), _feverEdgePaint);
+    canvas.drawRect(Rect.fromLTWH(0, h - edgeW, w, edgeW), _feverEdgePaint);
+  }
+
+  /// NEW: Full-screen colour flash for milestone / last-chance events.
+  void _renderScreenFlash(Canvas canvas) {
+    if (screenFlashAlpha <= 0) return;
+    _flashPaint.color = _colorWithAlpha(
+      _screenFlashColor,
+      (screenFlashAlpha * 255).round().clamp(0, 255),
+    );
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), _flashPaint);
   }
 
   void _renderPlayer(Canvas canvas) {
@@ -2187,16 +2506,10 @@ class BlockDashGame extends FlameGame {
   }
 
   ui.Picture? _cachedBlockPictureFor(Color color) {
-    final picture = _blockPictures[color];
-    assert(
-      picture != null,
-      'Missing prewarmed block picture for $color. '
-      'Add it to _rebuildRenderCache().',
-    );
-    return picture;
+    return _blockPictures[color];
   }
 
-  /// Glossy 3-D block — Block-Blast inspired
+  /// Glossy 3-D block — Block-Blast inspired.
   void _drawBlockRaw(Canvas canvas, Rect rect, Color color) {
     final radius = const Radius.circular(10);
     final rrect = RRect.fromRectAndRadius(rect, radius);
@@ -2207,14 +2520,13 @@ class BlockDashGame extends FlameGame {
       Paint()..color = _scaleColor(color, 0.3, alpha: 130),
     );
 
-    // 2. Bottom-face 3-D depth strip
-    final bottomFace = RRect.fromRectAndRadius(
-      rect.shift(const Offset(0, 3)),
-      radius,
+    // 2. Bottom-face depth strip
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.shift(const Offset(0, 3)), radius),
+      Paint()..color = _scaleColor(color, 0.55),
     );
-    canvas.drawRRect(bottomFace, Paint()..color = _scaleColor(color, 0.55));
 
-    // 3. Main face — gradient
+    // 3. Main face gradient
     final lightColor = _lightenColor(color, 40);
     canvas.drawRRect(
       rrect,
@@ -2255,7 +2567,6 @@ class BlockDashGame extends FlameGame {
 
   void _renderParticles(Canvas canvas) {
     if (particles.isEmpty) return;
-
     final path = _particleBatchPath;
     var hasBatch = false;
     var batchColor = particles.first.color;
@@ -2279,7 +2590,6 @@ class BlockDashGame extends FlameGame {
         batchColorKey = p.colorKey;
         batchAlpha = alpha;
       }
-
       path.addRRect(
         RRect.fromRectAndRadius(
           Rect.fromCenter(center: p.position, width: 8, height: 8),
@@ -2288,7 +2598,6 @@ class BlockDashGame extends FlameGame {
       );
       hasBatch = true;
     }
-
     flushBatch();
   }
 
@@ -2351,11 +2660,37 @@ class BlockDashGame extends FlameGame {
 
   // ── Hazard Generation ──────────────────────────────────────────────────────
 
+  /// Generates hazard rows down to [minRow].
+  /// NEW: 15 % chance of a double hazard (both edges blocked in one row).
   void _generateHazardsUntil(int minRow) {
     while (nextHazardRow >= minRow) {
       final side = _pickHazardSide();
       _addHazard(side == 0 ? 0 : cols - 1, nextHazardRow);
+
+      // NEW: Occasionally block both sides — creates tighter corridors.
+      if (random.nextDouble() < doubleHazardChance) {
+        final otherCol = side == 0 ? cols - 1 : 0;
+        _addHazard(otherCol, nextHazardRow);
+      }
+
       nextHazardRow -= hazardPeriod;
+    }
+  }
+
+  /// NEW: Generates bonus (gold) blocks down to [minRow].
+  /// Bonus blocks only spawn in centre columns (1–3) and never in hazard cells.
+  void _generateBonusUntil(int minRow) {
+    while (nextBonusRow >= minRow) {
+      // Candidate columns are the inner three — never the hazard edge columns.
+      final candidates = <int>[];
+      for (var col = 1; col <= cols - 2; col++) {
+        if (!_hasHazardAt(col, nextBonusRow)) candidates.add(col);
+      }
+      if (candidates.isNotEmpty) {
+        final col = candidates[random.nextInt(candidates.length)];
+        _addBonus(col, nextBonusRow);
+      }
+      nextBonusRow -= bonusPeriod;
     }
   }
 
@@ -2373,7 +2708,7 @@ class BlockDashGame extends FlameGame {
     return side;
   }
 
-  // ── Spatial data structure helpers ─────────────────────────────────────────
+  // ── Spatial data helpers ───────────────────────────────────────────────────
 
   int _colBit(int col) => 1 << col;
 
@@ -2386,8 +2721,7 @@ class BlockDashGame extends FlameGame {
   }
 
   bool _hasHazardAt(int col, int row) {
-    final rowMask = hazardsByRow[row] ?? 0;
-    return (rowMask & _colBit(col)) != 0;
+    return ((hazardsByRow[row] ?? 0) & _colBit(col)) != 0;
   }
 
   void _placeTrailPath(int fromCol, int fromRow, int colDelta, int steps) {
@@ -2400,11 +2734,31 @@ class BlockDashGame extends FlameGame {
     }
   }
 
-  /// OPTIMIZED: Remove entire rows at once instead of checking each point
+  // ── NEW: Bonus block helpers ───────────────────────────────────────────────
+
+  void _addBonus(int col, int row) {
+    bonusByRow[row] = (bonusByRow[row] ?? 0) | _colBit(col);
+  }
+
+  bool _hasBonusAt(int col, int row) {
+    return ((bonusByRow[row] ?? 0) & _colBit(col)) != 0;
+  }
+
+  void _removeBonusAt(int col, int row) {
+    final current = bonusByRow[row] ?? 0;
+    final updated = current & ~_colBit(col);
+    if (updated == 0) {
+      bonusByRow.remove(row);
+    } else {
+      bonusByRow[row] = updated;
+    }
+  }
+
   void _cleanupRowsBehind(int row) {
     final cutoff = row + cleanupBehindRows;
     _removeRowsAfter(trailsByRow, cutoff);
     _removeRowsAfter(hazardsByRow, cutoff);
+    _removeRowsAfter(bonusByRow, cutoff); // NEW
   }
 
   void _removeRowsAfter(SplayTreeMap<int, int> rows, int cutoff) {
@@ -2423,17 +2777,34 @@ class BlockDashGame extends FlameGame {
     maxCombo = math.max(maxCombo, comboCount);
     comboTimeLeft = comboTimeout;
     comboNotifier.value = comboCount;
+
     if (comboCount >= 3 && comboSoundCooldown <= 0) {
       comboSoundCooldown = 0.22;
       _playSound('combo.wav');
     }
+
+    // NEW: Enter Fever mode at threshold
+    if (comboCount >= feverComboThreshold && !isFeverMode) {
+      isFeverMode = true;
+      feverNotifier.value = true;
+      _triggerScreenFlash(const Color(0xFFFF5500), 0.38);
+      _setStatus('🔥  FEVER MODE!');
+    }
   }
 
+  /// NEW: Enhanced multiplier table — higher ceiling, fever doubles it.
   int _comboMultiplier() {
-    if (comboCount < 3) return 1;
-    if (comboCount < 5) return 2;
-    if (comboCount < 10) return 3;
-    return 5;
+    final base = comboCount < 3
+        ? 1
+        : comboCount < 5
+        ? 2
+        : comboCount < 8
+        ? 3
+        : comboCount < 12
+        ? 5
+        : 8;
+    // In fever, every point is worth twice as much
+    return isFeverMode ? base * 2 : base;
   }
 
   void _resetCombo() {
@@ -2441,6 +2812,15 @@ class BlockDashGame extends FlameGame {
     lastComboMove = null;
     comboTimeLeft = 0;
     comboNotifier.value = 0;
+
+    // NEW: Exit Fever mode when combo chain breaks
+    if (isFeverMode) {
+      isFeverMode = false;
+      feverPulse = 0;
+      feverNotifier.value = false;
+      _statusTimer?.cancel();
+      statusNotifier.value = '';
+    }
   }
 
   // ── Timer ──────────────────────────────────────────────────────────────────
@@ -2469,8 +2849,26 @@ class BlockDashGame extends FlameGame {
 
   // ── Death ──────────────────────────────────────────────────────────────────
 
-  Future<void> _triggerDeath() async {
+  /// [byHazard] — true when the player physically hit a hazard block.
+  /// Last Chance only applies to timer exhaustion, not hazard collisions.
+  Future<void> _triggerDeath({bool byHazard = false}) async {
     if (isDead) return;
+
+    // NEW: Last Chance save — fires once per game on timer death with active combo
+    if (!byHazard && hasLastChance && comboCount >= lastChanceMinCombo) {
+      hasLastChance = false;
+      lastChanceNotifier.value = false;
+      timerValue = lastChanceTimerAmount;
+      _syncTimerNotifier(force: true);
+      _triggerScreenFlash(BlockDashColors.orange, 0.65);
+      _playHapticHeavy();
+      _setStatus(
+        '⚡  LAST CHANCE!',
+        duration: const Duration(milliseconds: 1800),
+      );
+      return; // Player lives!
+    }
+
     isDead = true;
     shakeTimeLeft = 0.5;
     _playHapticHeavy();
@@ -2484,8 +2882,33 @@ class BlockDashGame extends FlameGame {
     }
     Future<void>.delayed(const Duration(milliseconds: 550), () {
       onGameOver(
-        GameResult(score: score, bestScore: bestScore, isNewBest: isNewBest),
+        GameResult(
+          score: score,
+          bestScore: bestScore,
+          isNewBest: isNewBest,
+          maxCombo: maxCombo,
+        ),
       );
+    });
+  }
+
+  // ── NEW: Screen flash & status helpers ─────────────────────────────────────
+
+  /// Triggers a full-screen colour flash that fades out automatically.
+  void _triggerScreenFlash(Color color, double alpha) {
+    _screenFlashColor = color;
+    screenFlashAlpha = alpha.clamp(0.0, 1.0);
+  }
+
+  /// Shows a temporary status message in the HUD banner, then clears it.
+  void _setStatus(
+    String message, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
+    statusNotifier.value = message;
+    _statusTimer?.cancel();
+    _statusTimer = Timer(duration, () {
+      if (!isDead) statusNotifier.value = '';
     });
   }
 
@@ -2500,7 +2923,6 @@ class BlockDashGame extends FlameGame {
     if (overflow > 0) {
       particles.removeRange(0, math.min(overflow, particles.length));
     }
-
     for (var i = 0; i < particleBurstCount; i++) {
       final angle = math.pi * 2 * i / particleBurstCount;
       final speed = 70 + random.nextDouble() * 65;
@@ -2514,11 +2936,9 @@ class BlockDashGame extends FlameGame {
         ),
       );
     }
-
     particles.sort((a, b) {
-      final colorOrder = a.colorKey.compareTo(b.colorKey);
-      if (colorOrder != 0) return colorOrder;
-      return a.age.compareTo(b.age);
+      final c = a.colorKey.compareTo(b.colorKey);
+      return c != 0 ? c : a.age.compareTo(b.age);
     });
   }
 
@@ -2552,16 +2972,14 @@ class BlockDashGame extends FlameGame {
     );
   }
 
+  // ── Haptics & audio ────────────────────────────────────────────────────────
+
   void _playHapticSelection() {
-    if (_GameSettings.vibrationEnabled(prefs)) {
-      HapticFeedback.selectionClick();
-    }
+    if (_GameSettings.vibrationEnabled(prefs)) HapticFeedback.selectionClick();
   }
 
   void _playHapticHeavy() {
-    if (_GameSettings.vibrationEnabled(prefs)) {
-      HapticFeedback.heavyImpact();
-    }
+    if (_GameSettings.vibrationEnabled(prefs)) HapticFeedback.heavyImpact();
   }
 
   void _playSound(String fileName) {
@@ -2582,7 +3000,7 @@ class BlockDashGame extends FlameGame {
     _moveSoundPool = null;
     _comboSoundPool = null;
     if (pools.isNotEmpty) {
-      unawaited(Future.wait(pools.map((pool) => pool.dispose())));
+      unawaited(Future.wait(pools.map((p) => p.dispose())));
     }
   }
 }
