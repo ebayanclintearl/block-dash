@@ -10,7 +10,8 @@ void main() {
 
     await tester.pumpWidget(BlockDashApp(prefs: prefs));
 
-    expect(find.text('BLOCK\nDASH'), findsOneWidget);
+    expect(find.text('BLOCK'), findsWidgets);
+    expect(find.text('DASH'), findsWidgets);
     expect(find.text('PLAY'), findsOneWidget);
     expect(find.text('RATE US'), findsOneWidget);
     expect(find.text('SETTINGS'), findsNothing);

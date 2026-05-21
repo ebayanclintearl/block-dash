@@ -63,28 +63,29 @@ class BlockDashColors {
   static const blockPurple = Color(0xFF9B3FE0);
   static const blockOrange = Color(0xFFFF7030);
   static const blockBlue = Color(0xFF2080FF);
+  static const blockPink = Color(0xFFFF2D8D);
   static const shadow18 = Color(0x2D000000);
   static const shadow28 = Color(0x47000000);
   static const shadow45 = Color(0x73000000);
   static const white12 = Color(0x1FFFFFFF);
   static const white30 = Color(0x4DFFFFFF);
   static const white55 = Color(0x8CFFFFFF);
-  static const List<Color> trailRainbow = [
-    Color(0xFF3A8CFF),
-    Color(0xFF10C8F0),
-    Color(0xFF38C048),
-    Color(0xFFE8C000),
-    Color(0xFFFF6828),
-    Color(0xFFB050EE),
+  static const List<Color> runAccentPalette = [
+    blockBlue,
+    blockGreen,
+    blockOrange,
+    blockPurple,
+    blockPink,
   ];
-  static const List<Color> mutedTrailRainbow = [
-    Color(0xC83A8CFF),
-    Color(0xC810C8F0),
-    Color(0xC838C048),
-    Color(0xC8E8C000),
-    Color(0xC8FF6828),
-    Color(0xC8B050EE),
-  ];
+}
+
+class BlockDashSpacing {
+  static const xs = 8.0;
+  static const sm = 16.0;
+  static const md = 24.0;
+  static const lg = 32.0;
+  static const blockRadius = 8.0;
+  static const panelRadius = 16.0;
 }
 
 int _channel(double value) => (value * 255).round().clamp(0, 255);
@@ -134,6 +135,12 @@ const _blockDashAudioFiles = [
   'combo.wav',
   'death.wav',
   'new_best.wav',
+  'timer_refill.wav',
+  'combo_milestone.wav',
+  'bonus.wav',
+  'near_miss.wav',
+  'low_timer.wav',
+  'fever.wav',
 ];
 
 Future<void>? _blockDashAudioPreloadFuture;
@@ -170,14 +177,17 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+              padding: const EdgeInsets.symmetric(
+                horizontal: BlockDashSpacing.md,
+                vertical: BlockDashSpacing.md,
+              ),
               child: Column(
                 children: [
                   const Spacer(flex: 2),
                   const _HomeBlocks(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: BlockDashSpacing.md),
                   const _BlockTitle(text: 'BLOCK\nDASH'),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: BlockDashSpacing.md),
                   _SubTag(text: 'STACK · DODGE · WIN'),
                   const Spacer(flex: 2),
                   _BigButton(
@@ -197,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: BlockDashSpacing.sm),
                   _BigButton(
                     label: 'RATE US',
                     icon: Icons.star_rate_rounded,
@@ -211,8 +221,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Positioned(
-              top: 8,
-              right: 10,
+              top: BlockDashSpacing.xs,
+              right: BlockDashSpacing.xs,
               child: _HomeIconButton(
                 tooltip: 'Settings',
                 icon: Icons.settings_rounded,
@@ -242,8 +252,23 @@ Future<void> _showRateUsDialog(BuildContext context) {
     context: context,
     barrierColor: const Color(0x99071431),
     builder: (context) => AlertDialog(
-      backgroundColor: const Color(0xFF263A9D),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      backgroundColor: BlockDashColors.bgTop,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(BlockDashSpacing.panelRadius),
+      ),
+      titlePadding: const EdgeInsets.fromLTRB(
+        BlockDashSpacing.sm,
+        BlockDashSpacing.sm,
+        BlockDashSpacing.sm,
+        BlockDashSpacing.xs,
+      ),
+      contentPadding: const EdgeInsets.all(BlockDashSpacing.sm),
+      actionsPadding: const EdgeInsets.fromLTRB(
+        BlockDashSpacing.sm,
+        0,
+        BlockDashSpacing.sm,
+        BlockDashSpacing.sm,
+      ),
       title: const Text(
         'Rate Us',
         textAlign: TextAlign.center,
@@ -255,14 +280,14 @@ Future<void> _showRateUsDialog(BuildContext context) {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 34),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
+              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
             ],
           ),
-          SizedBox(height: 14),
+          SizedBox(height: BlockDashSpacing.sm),
           Text(
             'Thanks for supporting Block Dash.',
             textAlign: TextAlign.center,
@@ -298,26 +323,26 @@ class _HomeIconButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         clipBehavior: Clip.antiAlias,
-        shape: const CircleBorder(),
+        borderRadius: BorderRadius.circular(BlockDashSpacing.blockRadius),
         child: InkWell(
-          customBorder: const CircleBorder(),
+          borderRadius: BorderRadius.circular(BlockDashSpacing.blockRadius),
           onTap: onPressed,
           child: Ink(
-            width: 52,
-            height: 52,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
               color: const Color(0x55183080),
+              borderRadius: BorderRadius.circular(BlockDashSpacing.blockRadius),
               border: Border.all(color: const Color(0x66B0D8FF), width: 2),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x55000000),
-                  blurRadius: 10,
+                  blurRadius: 8,
                   offset: Offset(0, 4),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 30),
+            child: Icon(icon, color: Colors.white, size: 32),
           ),
         ),
       ),
@@ -369,7 +394,10 @@ class _SettingsDialogState extends State<_SettingsDialog> {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.82;
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: BlockDashSpacing.md,
+        vertical: BlockDashSpacing.md,
+      ),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: 430, maxHeight: maxHeight),
         child: Container(
@@ -377,20 +405,24 @@ class _SettingsDialogState extends State<_SettingsDialog> {
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF6D95FF), Color(0xFF4C6EE8)],
+              colors: [
+                BlockDashColors.bgBottom,
+                BlockDashColors.bgMid,
+                BlockDashColors.bgTop,
+              ],
             ),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0x778DB0FF), width: 2),
+            borderRadius: BorderRadius.circular(BlockDashSpacing.panelRadius),
+            border: Border.all(color: const Color(0x88B0D8FF), width: 2),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x77000000),
-                blurRadius: 22,
-                offset: Offset(0, 10),
+                blurRadius: 24,
+                offset: Offset(0, 8),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+            padding: const EdgeInsets.all(BlockDashSpacing.sm),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -403,7 +435,7 @@ class _SettingsDialogState extends State<_SettingsDialog> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 34,
+                          fontSize: 32,
                           fontWeight: FontWeight.w900,
                           shadows: [
                             Shadow(
@@ -421,7 +453,7 @@ class _SettingsDialogState extends State<_SettingsDialog> {
                       icon: const Icon(
                         Icons.close_rounded,
                         color: Color(0xFFD8E6FF),
-                        size: 42,
+                        size: 40,
                         shadows: [
                           Shadow(
                             offset: Offset(0, 2),
@@ -436,14 +468,20 @@ class _SettingsDialogState extends State<_SettingsDialog> {
                 const SizedBox(height: 8),
                 Flexible(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(
+                      BlockDashSpacing.panelRadius,
+                    ),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xAA263A9D),
-                        borderRadius: BorderRadius.circular(18),
+                        color: const Color(0xCC1255CC),
+                        borderRadius: BorderRadius.circular(
+                          BlockDashSpacing.panelRadius,
+                        ),
                       ),
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: BlockDashSpacing.xs,
+                        ),
                         child: Column(
                           children: [
                             _SettingsToggleRow(
@@ -535,11 +573,11 @@ class _SettingsToggleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.all(BlockDashSpacing.sm),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white, size: 34),
-          const SizedBox(width: 14),
+          Icon(icon, color: Colors.white, size: 32),
+          const SizedBox(width: BlockDashSpacing.sm),
           Expanded(
             child: Text(
               label,
@@ -552,7 +590,7 @@ class _SettingsToggleRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: BlockDashSpacing.sm),
           Switch(
             value: value,
             onChanged: onChanged,
@@ -561,7 +599,7 @@ class _SettingsToggleRow extends StatelessWidget {
             trackColor: WidgetStateProperty.resolveWith((states) {
               return states.contains(WidgetState.selected)
                   ? const Color(0xFF68D36D)
-                  : const Color(0xFF344793);
+                  : BlockDashColors.boardBorder;
             }),
           ),
         ],
@@ -588,11 +626,11 @@ class _SettingsLinkRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+          padding: const EdgeInsets.all(BlockDashSpacing.sm),
           child: Row(
             children: [
               Icon(icon, color: Colors.white, size: 32),
-              const SizedBox(width: 14),
+              const SizedBox(width: BlockDashSpacing.sm),
               Expanded(
                 child: Text(
                   label,
@@ -628,7 +666,7 @@ class _SettingsDivider extends StatelessWidget {
       thickness: 1,
       indent: 16,
       endIndent: 16,
-      color: Color(0x332654BC),
+      color: Color(0x44B0D8FF),
     );
   }
 }
@@ -641,8 +679,23 @@ Future<void> _showInfoDialog(
   return showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: const Color(0xFF263A9D),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: BlockDashColors.bgTop,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(BlockDashSpacing.panelRadius),
+      ),
+      titlePadding: const EdgeInsets.fromLTRB(
+        BlockDashSpacing.sm,
+        BlockDashSpacing.sm,
+        BlockDashSpacing.sm,
+        BlockDashSpacing.xs,
+      ),
+      contentPadding: const EdgeInsets.all(BlockDashSpacing.sm),
+      actionsPadding: const EdgeInsets.fromLTRB(
+        BlockDashSpacing.sm,
+        0,
+        BlockDashSpacing.sm,
+        BlockDashSpacing.sm,
+      ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
       content: Text(body),
       actions: [
@@ -666,17 +719,17 @@ class _HomeBlocks extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Positioned(
-            left: 20,
+            left: BlockDashSpacing.sm,
             child: Transform.rotate(
               angle: -0.22,
-              child: _MiniBlock(color: BlockDashColors.blockRed, size: 60),
+              child: _MiniBlock(color: BlockDashColors.blockRed, size: 64),
             ),
           ),
           Positioned(
-            right: 20,
+            right: BlockDashSpacing.sm,
             child: Transform.rotate(
               angle: 0.18,
-              child: _MiniBlock(color: BlockDashColors.blockGreen, size: 55),
+              child: _MiniBlock(color: BlockDashColors.blockGreen, size: 56),
             ),
           ),
           Transform.rotate(
@@ -702,17 +755,17 @@ class _MiniBlock extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(size * 0.18),
+        borderRadius: BorderRadius.circular(BlockDashSpacing.blockRadius),
         boxShadow: [
           BoxShadow(
             color: _colorWithAlpha(color, 100),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
           const BoxShadow(
             color: Color(0x50000000),
-            blurRadius: 6,
-            offset: Offset(0, 6),
+            blurRadius: 8,
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -723,7 +776,7 @@ class _MiniBlock extends StatelessWidget {
           height: size * 0.28,
           decoration: BoxDecoration(
             color: BlockDashColors.white55,
-            borderRadius: BorderRadius.circular(size * 0.12),
+            borderRadius: BorderRadius.circular(BlockDashSpacing.blockRadius),
           ),
         ),
       ),
@@ -739,10 +792,13 @@ class _SubTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+      padding: const EdgeInsets.symmetric(
+        horizontal: BlockDashSpacing.sm,
+        vertical: BlockDashSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: const Color(0x401E72E8),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(BlockDashSpacing.blockRadius),
         border: Border.all(
           color: BlockDashColors.cyan.withValues(alpha: 0.55),
           width: 2,
@@ -783,12 +839,13 @@ class _BigButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final h = tall ? 84.0 : 68.0;
+    final h = tall ? 80.0 : 64.0;
+    const depth = BlockDashSpacing.xs;
     final darkColor = _scaleColor(color, 0.68);
 
     return SizedBox(
       width: double.infinity,
-      height: h + 6,
+      height: h + depth,
       child: Stack(
         children: [
           Positioned(
@@ -799,7 +856,9 @@ class _BigButton extends StatelessWidget {
               height: h,
               decoration: BoxDecoration(
                 color: darkColor,
-                borderRadius: BorderRadius.circular(h / 2),
+                borderRadius: BorderRadius.circular(
+                  BlockDashSpacing.blockRadius,
+                ),
               ),
             ),
           ),
@@ -812,9 +871,13 @@ class _BigButton extends StatelessWidget {
               child: Material(
                 color: Colors.transparent,
                 clipBehavior: Clip.antiAlias,
-                borderRadius: BorderRadius.circular(h / 2),
+                borderRadius: BorderRadius.circular(
+                  BlockDashSpacing.blockRadius,
+                ),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(h / 2),
+                  borderRadius: BorderRadius.circular(
+                    BlockDashSpacing.blockRadius,
+                  ),
                   onTap: onPressed,
                   child: Ink(
                     decoration: BoxDecoration(
@@ -823,26 +886,30 @@ class _BigButton extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [accentColor, color],
                       ),
-                      borderRadius: BorderRadius.circular(h / 2),
+                      borderRadius: BorderRadius.circular(
+                        BlockDashSpacing.blockRadius,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: shadowColor,
-                          blurRadius: 18,
-                          offset: const Offset(0, 6),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: Stack(
                       children: [
                         Positioned(
-                          top: 5,
-                          left: h * 0.6,
-                          right: h * 0.6,
+                          top: BlockDashSpacing.xs,
+                          left: tall ? 48 : 40,
+                          right: tall ? 48 : 40,
                           child: Container(
-                            height: h * 0.28,
+                            height: 16,
                             decoration: BoxDecoration(
                               color: BlockDashColors.white30,
-                              borderRadius: BorderRadius.circular(h),
+                              borderRadius: BorderRadius.circular(
+                                BlockDashSpacing.blockRadius,
+                              ),
                             ),
                           ),
                         ),
@@ -852,7 +919,7 @@ class _BigButton extends StatelessWidget {
                             children: [
                               Icon(
                                 icon,
-                                size: tall ? 34 : 28,
+                                size: tall ? 32 : 24,
                                 color: Colors.white,
                                 shadows: const [
                                   Shadow(
@@ -862,7 +929,7 @@ class _BigButton extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: BlockDashSpacing.xs),
                               Text(
                                 label,
                                 style: TextStyle(
@@ -905,19 +972,93 @@ class _BlockTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final shortest = MediaQuery.sizeOf(context).shortestSide;
     final fontSize = (shortest * 0.17).clamp(48.0, 84.0);
-    return Text(
-      text,
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        height: 0.9,
-        fontSize: fontSize,
-        fontWeight: FontWeight.w900,
-        letterSpacing: -1,
-        color: BlockDashColors.yellow,
-        shadows: const [
-          Shadow(offset: Offset(0, 5), blurRadius: 0, color: Color(0xAA000000)),
-          Shadow(blurRadius: 20, color: Color(0x882080FF)),
-        ],
+    final lines = text.split('\n');
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _GlossyTitleLine(
+          text: lines.first,
+          fontSize: fontSize,
+          colors: const [Colors.white, Color(0xFFD9ECFF)],
+          strokeColor: const Color(0xFF7AA8F5),
+          baseShadowColor: const Color(0xCC04245F),
+        ),
+        Transform.translate(
+          offset: const Offset(0, -8),
+          child: _GlossyTitleLine(
+            text: lines.length > 1 ? lines[1] : '',
+            fontSize: fontSize,
+            colors: const [Color(0xFFFFF06A), Color(0xFFFFB800)],
+            strokeColor: const Color(0xFFE58B00),
+            baseShadowColor: const Color(0xCC4B2500),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GlossyTitleLine extends StatelessWidget {
+  const _GlossyTitleLine({
+    required this.text,
+    required this.fontSize,
+    required this.colors,
+    required this.strokeColor,
+    required this.baseShadowColor,
+  });
+
+  final String text;
+  final double fontSize;
+  final List<Color> colors;
+  final Color strokeColor;
+  final Color baseShadowColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = TextStyle(
+      height: 0.86,
+      fontSize: fontSize,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 0,
+    );
+    final strokeStyle = textStyle.copyWith(
+      foreground: Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4
+        ..color = strokeColor,
+    );
+
+    return Semantics(
+      label: text,
+      child: ExcludeSemantics(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Transform.translate(
+                offset: const Offset(4, 4),
+                child: Text(
+                  text,
+                  style: textStyle.copyWith(color: baseShadowColor),
+                ),
+              ),
+              Text(text, style: strokeStyle),
+              ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (bounds) => LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: colors,
+                ).createShader(bounds),
+                child: Text(
+                  text,
+                  style: textStyle.copyWith(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1082,10 +1223,10 @@ class _GameScreenState extends State<GameScreen> {
                             _GameHud(game: _game),
                             const SizedBox(height: 8),
                             _TimerBar(game: _game),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: BlockDashSpacing.sm),
                             // Fixed-height slot for combo — no layout shift
                             _ComboPopup(game: _game),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: BlockDashSpacing.xs),
                             // Status banner for fever / last-chance / milestone
                             _StatusBanner(game: _game),
                           ],
@@ -1118,8 +1259,8 @@ class _GameLoadingView extends StatelessWidget {
             child: Center(
               child: error == null
                   ? const SizedBox(
-                      width: 46,
-                      height: 46,
+                      width: 48,
+                      height: 48,
                       child: CircularProgressIndicator(
                         color: Colors.white,
                         strokeWidth: 5,
@@ -1165,18 +1306,14 @@ class GameOverScreen extends StatelessWidget {
                 'Game Over',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 54,
+                  fontSize: 48,
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFFB0D8FF),
-                  shadows: [
-                    const Shadow(
+                  color: BlockDashColors.blockRed,
+                  shadows: const [
+                    Shadow(
                       offset: Offset(0, 4),
                       blurRadius: 0,
                       color: Color(0x88000E6A),
-                    ),
-                    Shadow(
-                      blurRadius: 20,
-                      color: BlockDashColors.cyan.withValues(alpha: 0.4),
                     ),
                   ],
                 ),
@@ -1197,7 +1334,7 @@ class GameOverScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: BlockDashSpacing.sm),
               _BigButton(
                 label: 'HOME',
                 icon: Icons.home_rounded,
@@ -1229,10 +1366,10 @@ class _ScorePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+      padding: const EdgeInsets.all(BlockDashSpacing.sm),
       decoration: BoxDecoration(
         color: const Color(0x40183080),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(BlockDashSpacing.panelRadius),
         border: Border.all(
           color: BlockDashColors.cyan.withValues(alpha: 0.35),
           width: 2,
@@ -1249,7 +1386,7 @@ class _ScorePanel extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: BlockDashSpacing.xs),
           Text(
             '${result.score}',
             style: const TextStyle(
@@ -1260,9 +1397,9 @@ class _ScorePanel extends StatelessWidget {
               shadows: [Shadow(offset: Offset(0, 4), color: Color(0x88000000))],
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: BlockDashSpacing.sm),
           const Divider(height: 1, color: Color(0x30B0D8FF)),
-          const SizedBox(height: 18),
+          const SizedBox(height: BlockDashSpacing.sm),
           const Text(
             'Best Score',
             style: TextStyle(
@@ -1272,7 +1409,7 @@ class _ScorePanel extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: BlockDashSpacing.xs),
           Text(
             '${result.bestScore}',
             style: const TextStyle(
@@ -1284,17 +1421,22 @@ class _ScorePanel extends StatelessWidget {
             ),
           ),
           if (result.isNewBest) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: BlockDashSpacing.sm),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: BlockDashSpacing.sm,
+                vertical: BlockDashSpacing.xs,
+              ),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFFFFE564), BlockDashColors.orange],
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(
+                  BlockDashSpacing.blockRadius,
+                ),
               ),
               child: const Text(
-                '🏆  NEW HIGH SCORE!',
+                'NEW HIGH SCORE!',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -1304,7 +1446,7 @@ class _ScorePanel extends StatelessWidget {
             ),
           ],
           if (result.maxCombo > 0) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: BlockDashSpacing.xs),
             Text(
               'Best Combo: ${result.maxCombo}x',
               style: const TextStyle(
@@ -1361,7 +1503,7 @@ class _GameHud extends StatelessWidget {
           child: ValueListenableBuilder<bool>(
             valueListenable: game.feverNotifier,
             builder: (_, fever, _) => SizedBox(
-              width: 36,
+              width: 32,
               child: fever
                   ? const Icon(
                       Icons.local_fire_department_rounded,
@@ -1410,11 +1552,11 @@ class _CrownScore extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         const Icon(
-          Icons.emoji_events_rounded,
+          Icons.workspace_premium_rounded,
           color: BlockDashColors.yellow,
-          size: 22,
+          size: 24,
         ),
-        const SizedBox(width: 5),
+        const SizedBox(width: BlockDashSpacing.xs),
         Text(
           '$value',
           style: const TextStyle(
@@ -1433,8 +1575,8 @@ class _TimerBar extends StatelessWidget {
   const _TimerBar({required this.game});
 
   static const _trackWidth = 200.0;
-  static const _trackPadding = 3.0;
-  static const _trackHeight = 14.0;
+  static const _trackPadding = BlockDashSpacing.xs;
+  static const _trackHeight = 24.0;
   static const _fillHeight = _trackHeight - _trackPadding * 2;
   static const _fillMaxWidth = _trackWidth - _trackPadding * 2;
   static const _fillAnimationDuration = Duration(milliseconds: 90);
@@ -1445,7 +1587,9 @@ class _TimerBar extends StatelessWidget {
 
   static const _trackDecoration = BoxDecoration(
     color: Color(0x66183080),
-    borderRadius: BorderRadius.all(Radius.circular(10)),
+    borderRadius: BorderRadius.all(
+      Radius.circular(BlockDashSpacing.blockRadius),
+    ),
     border: Border.fromBorderSide(
       BorderSide(color: Color(0x552654BC), width: 2),
     ),
@@ -1453,15 +1597,21 @@ class _TimerBar extends StatelessWidget {
 
   static const _greenFillDecoration = BoxDecoration(
     gradient: LinearGradient(colors: _greenColors),
-    borderRadius: BorderRadius.all(Radius.circular(7)),
+    borderRadius: BorderRadius.all(
+      Radius.circular(BlockDashSpacing.blockRadius),
+    ),
   );
   static const _yellowFillDecoration = BoxDecoration(
     gradient: LinearGradient(colors: _yellowColors),
-    borderRadius: BorderRadius.all(Radius.circular(7)),
+    borderRadius: BorderRadius.all(
+      Radius.circular(BlockDashSpacing.blockRadius),
+    ),
   );
   static const _redFillDecoration = BoxDecoration(
     gradient: LinearGradient(colors: _redColors),
-    borderRadius: BorderRadius.all(Radius.circular(7)),
+    borderRadius: BorderRadius.all(
+      Radius.circular(BlockDashSpacing.blockRadius),
+    ),
   );
 
   final BlockDashGame game;
@@ -1504,28 +1654,32 @@ class _TimerBar extends StatelessWidget {
 class _ComboPopup extends StatelessWidget {
   const _ComboPopup({required this.game});
 
-  // Standard yellow/orange combo pill
-  static const _comboDecoration = BoxDecoration(
-    gradient: LinearGradient(
-      colors: [Color(0xFFFFE566), BlockDashColors.orange],
-    ),
-    borderRadius: BorderRadius.all(Radius.circular(15)),
-    border: Border.fromBorderSide(BorderSide(color: Color(0x66FFFFFF))),
-  );
-
   // Hot red/pink fever pill — same shape, hotter palette
   static const _feverDecoration = BoxDecoration(
     gradient: LinearGradient(colors: [Color(0xFFFF6020), Color(0xFFFF1880)]),
-    borderRadius: BorderRadius.all(Radius.circular(15)),
+    borderRadius: BorderRadius.all(
+      Radius.circular(BlockDashSpacing.blockRadius),
+    ),
     border: Border.fromBorderSide(BorderSide(color: Color(0x77FFFFFF))),
   );
 
   final BlockDashGame game;
 
+  BoxDecoration _comboDecoration(Color color) {
+    return BoxDecoration(
+      gradient: LinearGradient(colors: [_lightenColor(color, 45), color]),
+      borderRadius: const BorderRadius.all(
+        Radius.circular(BlockDashSpacing.blockRadius),
+      ),
+      border: const Border.fromBorderSide(BorderSide(color: Color(0x66FFFFFF))),
+      boxShadow: [BoxShadow(color: _colorWithAlpha(color, 90), blurRadius: 14)],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 36,
+      height: 40,
       child: RepaintBoundary(
         child: ListenableBuilder(
           listenable: Listenable.merge([
@@ -1538,12 +1692,16 @@ class _ComboPopup extends StatelessWidget {
             if (combo < 3) return const SizedBox.shrink();
             return Center(
               child: Container(
-                height: 30,
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                decoration: fever ? _feverDecoration : _comboDecoration,
+                height: 32,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: BlockDashSpacing.sm,
+                ),
+                decoration: fever
+                    ? _feverDecoration
+                    : _comboDecoration(game.runAccentColor),
                 alignment: Alignment.center,
                 child: Text(
-                  fever ? '🔥 ${combo}x FEVER!' : '${combo}x COMBO!',
+                  fever ? '${combo}x FEVER!' : '${combo}x COMBO!',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -1568,7 +1726,7 @@ class _StatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 28,
+      height: 32,
       child: RepaintBoundary(
         child: ValueListenableBuilder<String>(
           valueListenable: game.statusNotifier,
@@ -1667,22 +1825,27 @@ class BlockDashGame extends FlameGame {
   static const _bestScoreKey = 'blockDashBest';
   static const cols = 5;
   static const gap = 4.0;
-  static const baseMoveSeconds = 0.24;
+  static const baseMoveSeconds = 0.18;
+  static const minMoveSeconds = 0.1;
+  static const forwardMoveSteps = 5;
   static const hazardPeriod = 5;
   static const hazardOffset = 6;
   static const lookAheadRows = 80;
   static const cleanupBehindRows = 30;
   static const timerMax = 100.0;
-  static const baseTimerDrain = 22.0;
-  static const maxTimerDrain = 62.0;
+  static const baseTimerDrain = 24.0;
+  static const maxTimerDrain = 66.0;
   static const timerRefill = 35.0;
   // ── ARCADE: combo timeout extended for easier chaining ──
   static const comboTimeout = 2.0;
-  static const cameraFollowStrength = 12.0;
+  static const cameraFollowStrength = 16.0;
+  static const cameraFrameRate = 60.0;
   static final _cameraFollowFactor = 1 - math.exp(-cameraFollowStrength / 60.0);
+  static const shakeSeconds = 0.45;
   static const maxParticles = 40;
   static const particleBurstCount = 8;
   static const maxScorePopupPainters = 20;
+  static int _lastRunAccentIndex = -1;
 
   // ── NEW: Arcade mechanic constants ─────────────────────────────────────────
   /// Rows between bonus (gold) block spawns.
@@ -1712,19 +1875,6 @@ class BlockDashGame extends FlameGame {
   /// Points awarded for landing directly adjacent to a hazard.
   static const nearMissBonus = 8;
 
-  /// Probability that a hazard row gets a blocker on BOTH edges.
-  static const doubleHazardChance = 0.15;
-
-  static const _particleColors = [
-    BlockDashColors.blockRed,
-    BlockDashColors.orange,
-    BlockDashColors.yellow,
-    BlockDashColors.blockGreen,
-    BlockDashColors.blockCyan,
-    BlockDashColors.blockBlue,
-    BlockDashColors.blockPurple,
-  ];
-
   final SharedPreferences prefs;
   final void Function(GameResult result) onGameOver;
 
@@ -1753,6 +1903,7 @@ class BlockDashGame extends FlameGame {
   final particles = <Particle>[];
   final scorePopups = <ScorePopup>[];
   final random = math.Random();
+  Color runAccentColor = BlockDashColors.blockBlue;
   final _cellXs = List<double>.filled(cols, 0, growable: false);
   final _scorePopupPainters = <int, TextPainter>{};
   final _particlePaint = Paint();
@@ -1783,8 +1934,16 @@ class BlockDashGame extends FlameGame {
   /// Pre-allocated for the full-screen flash (milestone / last-chance).
   final _flashPaint = Paint();
 
-  AudioPool? _moveSoundPool;
+  final _moveSoundPlayers = <AudioPlayer>[];
+  final _timerRefillSoundPlayers = <AudioPlayer>[];
+  int _moveSoundCursor = 0;
+  int _timerRefillSoundCursor = 0;
   AudioPool? _comboSoundPool;
+  AudioPool? _comboMilestoneSoundPool;
+  AudioPool? _bonusSoundPool;
+  AudioPool? _nearMissSoundPool;
+  AudioPool? _lowTimerSoundPool;
+  AudioPool? _feverSoundPool;
 
   // ── Layout ─────────────────────────────────────────────────────────────────
   late double cellSize;
@@ -1830,6 +1989,7 @@ class BlockDashGame extends FlameGame {
   double timerNotifyElapsed = 0;
   double currentSpeed = baseMoveSeconds;
   double currentDrain = baseTimerDrain;
+  bool lowTimerWarningReady = true;
 
   // ── Move animation ─────────────────────────────────────────────────────────
   bool isMoving = false;
@@ -1850,6 +2010,7 @@ class BlockDashGame extends FlameGame {
   // ── Effects ────────────────────────────────────────────────────────────────
   Offset shakeOffset = Offset.zero;
   double shakeTimeLeft = 0;
+  double shakeElapsed = 0;
   double comboSoundCooldown = 0;
 
   Timer? _statusTimer;
@@ -1859,12 +2020,20 @@ class BlockDashGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    final pools = await Future.wait<AudioPool>([
-      FlameAudio.createPool('move.wav', maxPlayers: 4),
-      FlameAudio.createPool('combo.wav', maxPlayers: 3),
+    await Future.wait<void>([
+      _createSoundPlayers('move.wav', _moveSoundPlayers, 4),
+      _createSoundPlayers('timer_refill.wav', _timerRefillSoundPlayers, 4),
+      _createSoundPool('combo.wav', 3, (pool) => _comboSoundPool = pool),
+      _createSoundPool(
+        'combo_milestone.wav',
+        3,
+        (pool) => _comboMilestoneSoundPool = pool,
+      ),
+      _createSoundPool('bonus.wav', 3, (pool) => _bonusSoundPool = pool),
+      _createSoundPool('near_miss.wav', 2, (pool) => _nearMissSoundPool = pool),
+      _createSoundPool('low_timer.wav', 2, (pool) => _lowTimerSoundPool = pool),
+      _createSoundPool('fever.wav', 2, (pool) => _feverSoundPool = pool),
     ]);
-    _moveSoundPool = pools[0];
-    _comboSoundPool = pools[1];
     await Future<void>.delayed(Duration.zero);
     resetGame();
   }
@@ -1901,6 +2070,7 @@ class BlockDashGame extends FlameGame {
 
   void resetGame() {
     _computeLayout();
+    _chooseRunAccentColor();
     hazardsByRow.clear();
     trailsByRow.clear();
     bonusByRow.clear();
@@ -1933,11 +2103,14 @@ class BlockDashGame extends FlameGame {
     timerNotifyElapsed = 0;
     currentSpeed = baseMoveSeconds;
     currentDrain = baseTimerDrain;
+    lowTimerWarningReady = true;
     isMoving = false;
     isDead = false;
     cachedEasedMoveT = 1;
     comboSoundCooldown = 0;
     shakeOffset = Offset.zero;
+    shakeTimeLeft = 0;
+    shakeElapsed = 0;
 
     playerWorldY = _rowToY(playerRow);
     playerScreenY = size.y - cellSize - 20;
@@ -1959,6 +2132,16 @@ class BlockDashGame extends FlameGame {
     _placeTrail(playerCol, playerRow);
   }
 
+  void _chooseRunAccentColor() {
+    final palette = BlockDashColors.runAccentPalette;
+    var index = random.nextInt(palette.length);
+    if (palette.length > 1 && index == _lastRunAccentIndex) {
+      index = (index + 1 + random.nextInt(palette.length - 1)) % palette.length;
+    }
+    _lastRunAccentIndex = index;
+    runAccentColor = palette[index];
+  }
+
   void movePlayer(Direction direction) {
     if (isMoving || isDead || size.x <= 0 || size.y <= 0) return;
 
@@ -1974,7 +2157,7 @@ class BlockDashGame extends FlameGame {
 
     if (isForward) {
       colDelta = 0;
-      totalSteps = 4;
+      totalSteps = forwardMoveSteps;
     } else {
       colDelta = direction == Direction.right ? 1 : -1;
       totalSteps = direction == Direction.right
@@ -2002,7 +2185,10 @@ class BlockDashGame extends FlameGame {
     final steps = hitStep > 0 ? hitStep : totalSteps;
     final destCol = (playerCol + colDelta * steps).clamp(0, cols - 1);
     final destRow = playerRow - steps;
-    final duration = math.max(0.16, currentSpeed * steps / totalSteps);
+    final duration = math.max(
+      minMoveSeconds,
+      currentSpeed * steps / totalSteps,
+    );
 
     // Collect any bonus blocks along the path
     pendingBonusCollects = 0;
@@ -2016,16 +2202,6 @@ class BlockDashGame extends FlameGame {
         _removeBonusAt(pc, pr);
       }
     }
-
-    _increaseCombo(moveKind);
-    _playSound('move.wav');
-    _playHapticSelection();
-    _placeTrailPath(playerCol, playerRow, colDelta, steps);
-    _spawnParticles(
-      _screenX(playerCol) + cellSize / 2,
-      playerScreenY + cellSize / 2,
-    );
-    _refillTimer();
 
     final destWorldY = _rowToY(destRow);
 
@@ -2045,6 +2221,16 @@ class BlockDashGame extends FlameGame {
       cameraTargetScrollY,
       destWorldY - _cameraAnchorY,
     );
+
+    _increaseCombo(moveKind);
+    _playSound('move.wav');
+    _playHapticSelection();
+    _placeTrailPath(playerCol, playerRow, colDelta, steps);
+    _spawnParticles(
+      _screenX(playerCol) + cellSize / 2,
+      playerScreenY + cellSize / 2,
+    );
+    _refillTimer();
   }
 
   @override
@@ -2080,6 +2266,7 @@ class BlockDashGame extends FlameGame {
     timerValue = math.max(0, timerValue - effectiveDrain * dt);
     timerNotifyElapsed += dt;
     _syncTimerNotifier();
+    _updateLowTimerWarning();
     if (timerValue <= 0) {
       unawaited(_triggerDeath());
       return;
@@ -2126,11 +2313,13 @@ class BlockDashGame extends FlameGame {
           final bonusPoints = pendingBonusCollects * bonusScore;
           score += bonusPoints;
           scoreNotifier.value = score;
+          final previousTimerValue = timerValue;
           timerValue = math.min(
             timerMax,
             timerValue + bonusTimerRefill * pendingBonusCollects,
           );
           _syncTimerNotifier(force: true);
+          _playTimerRefillSound(timerValue - previousTimerValue);
           scorePopups.add(
             ScorePopup(
               worldPosition: Offset(
@@ -2140,10 +2329,8 @@ class BlockDashGame extends FlameGame {
               points: bonusPoints,
             ),
           );
-          if (comboSoundCooldown <= 0) {
-            _playSound('combo.wav');
-            comboSoundCooldown = 0.3;
-          }
+          _playSound('bonus.wav');
+          comboSoundCooldown = math.max(comboSoundCooldown, 0.2);
           _triggerScreenFlash(BlockDashColors.blockYellow, 0.28);
           _playHapticHeavy();
           pendingBonusCollects = 0;
@@ -2169,6 +2356,7 @@ class BlockDashGame extends FlameGame {
                 points: nearMissBonus,
               ),
             );
+            _playSound('near_miss.wav');
           }
         }
 
@@ -2183,7 +2371,7 @@ class BlockDashGame extends FlameGame {
             _playSound('combo.wav');
             comboSoundCooldown = 0.3;
           }
-          _setStatus('🎯  ${milestone * milestoneInterval}  SCORE BONUS!');
+          _setStatus('${milestone * milestoneInterval}  SCORE BONUS!');
         }
 
         _updateDifficulty();
@@ -2191,7 +2379,7 @@ class BlockDashGame extends FlameGame {
       }
     }
 
-    _updateCamera();
+    _updateCamera(dt);
   }
 
   @override
@@ -2254,19 +2442,22 @@ class BlockDashGame extends FlameGame {
   double _rowToY(int row) => gap + row * rowHeight;
   double _screenX(int col) => gridLeft + _cellX(col);
 
-  void _updateCamera() {
+  void _updateCamera(double dt) {
     final delta = cameraTargetScrollY - worldScrollY;
     if (delta.abs() < 0.05) {
       worldScrollY = cameraTargetScrollY;
     } else {
-      worldScrollY += delta * _cameraFollowFactor;
+      final frameScale = (dt * cameraFrameRate).clamp(0.0, 2.0);
+      final follow = (_cameraFollowFactor * frameScale).clamp(0.0, 1.0);
+      worldScrollY += delta * follow;
     }
     playerScreenY = playerWorldY - worldScrollY;
   }
 
   double _ease(double t) {
-    if (t < 0.5) return 4 * t * t * t;
-    return 1 - math.pow(-2 * t + 2, 3).toDouble() / 2;
+    final x = t.clamp(0.0, 1.0);
+    final inverse = 1 - x;
+    return 1 - inverse * inverse * inverse;
   }
 
   void _disposeRenderCache() {
@@ -2350,10 +2541,9 @@ class BlockDashGame extends FlameGame {
       _identityMatrix4,
     );
 
-    _cacheBlockPicture(BlockDashColors.blockCyan);
     _cacheBlockPicture(BlockDashColors.blockRed);
     _cacheBlockPicture(BlockDashColors.blockYellow); // bonus blocks
-    for (final color in BlockDashColors.mutedTrailRainbow) {
+    for (final color in BlockDashColors.runAccentPalette) {
       _cacheBlockPicture(color);
     }
   }
@@ -2421,16 +2611,15 @@ class BlockDashGame extends FlameGame {
   }
 
   void _renderTrails(Canvas canvas) {
-    const trailColors = BlockDashColors.mutedTrailRainbow;
+    final picture = _cachedBlockPictureFor(runAccentColor);
+    if (picture == null) return;
+
     final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
     for (var row = firstRow; row <= lastRow; row++) {
       final rowMask = trailsByRow[row] ?? 0;
       if (rowMask == 0) continue;
       final y = _rowToY(row) - worldScrollY;
-      final color = trailColors[row.abs() % trailColors.length];
-      final picture = _cachedBlockPictureFor(color);
-      if (picture == null) continue;
       _drawPictureRow(canvas, picture, y, rowMask);
     }
   }
@@ -2495,7 +2684,7 @@ class BlockDashGame extends FlameGame {
       canvas,
       x,
       playerScreenY,
-      isDead ? BlockDashColors.blockRed : BlockDashColors.blockCyan,
+      isDead ? BlockDashColors.blockRed : runAccentColor,
     );
   }
 
@@ -2661,17 +2850,10 @@ class BlockDashGame extends FlameGame {
   // ── Hazard Generation ──────────────────────────────────────────────────────
 
   /// Generates hazard rows down to [minRow].
-  /// NEW: 15 % chance of a double hazard (both edges blocked in one row).
   void _generateHazardsUntil(int minRow) {
     while (nextHazardRow >= minRow) {
       final side = _pickHazardSide();
       _addHazard(side == 0 ? 0 : cols - 1, nextHazardRow);
-
-      // NEW: Occasionally block both sides — creates tighter corridors.
-      if (random.nextDouble() < doubleHazardChance) {
-        final otherCol = side == 0 ? cols - 1 : 0;
-        _addHazard(otherCol, nextHazardRow);
-      }
 
       nextHazardRow -= hazardPeriod;
     }
@@ -2778,9 +2960,15 @@ class BlockDashGame extends FlameGame {
     comboTimeLeft = comboTimeout;
     comboNotifier.value = comboCount;
 
+    final isComboMilestone =
+        comboCount == 3 ||
+        comboCount == 5 ||
+        comboCount == 8 ||
+        comboCount == 12 ||
+        (comboCount > 12 && comboCount % 4 == 0);
     if (comboCount >= 3 && comboSoundCooldown <= 0) {
-      comboSoundCooldown = 0.22;
-      _playSound('combo.wav');
+      comboSoundCooldown = isComboMilestone ? 0.16 : 0.22;
+      _playSound(isComboMilestone ? 'combo_milestone.wav' : 'combo.wav');
     }
 
     // NEW: Enter Fever mode at threshold
@@ -2788,7 +2976,9 @@ class BlockDashGame extends FlameGame {
       isFeverMode = true;
       feverNotifier.value = true;
       _triggerScreenFlash(const Color(0xFFFF5500), 0.38);
-      _setStatus('🔥  FEVER MODE!');
+      _playSound('fever.wav');
+      comboSoundCooldown = math.max(comboSoundCooldown, 0.3);
+      _setStatus('FEVER MODE!');
     }
   }
 
@@ -2826,8 +3016,10 @@ class BlockDashGame extends FlameGame {
   // ── Timer ──────────────────────────────────────────────────────────────────
 
   void _refillTimer() {
+    final previousTimerValue = timerValue;
     timerValue = math.min(timerMax, timerValue + timerRefill);
     _syncTimerNotifier(force: true);
+    _playTimerRefillSound(timerValue - previousTimerValue);
   }
 
   void _syncTimerNotifier({bool force = false}) {
@@ -2840,10 +3032,25 @@ class BlockDashGame extends FlameGame {
     }
   }
 
+  void _updateLowTimerWarning() {
+    final ratio = (timerValue / timerMax).clamp(0.0, 1.0);
+    if (ratio > 0.4) {
+      lowTimerWarningReady = true;
+      return;
+    }
+    if (ratio <= 0.25 && lowTimerWarningReady) {
+      lowTimerWarningReady = false;
+      _playSound('low_timer.wav');
+    }
+  }
+
   // ── Difficulty ─────────────────────────────────────────────────────────────
 
   void _updateDifficulty() {
-    currentSpeed = math.max(0.16, baseMoveSeconds - (score ~/ 20) * 0.008);
+    currentSpeed = math.max(
+      minMoveSeconds,
+      baseMoveSeconds - (score ~/ 20) * 0.008,
+    );
     currentDrain = math.min(maxTimerDrain, baseTimerDrain + (score ~/ 30) * 3);
   }
 
@@ -2862,15 +3069,13 @@ class BlockDashGame extends FlameGame {
       _syncTimerNotifier(force: true);
       _triggerScreenFlash(BlockDashColors.orange, 0.65);
       _playHapticHeavy();
-      _setStatus(
-        '⚡  LAST CHANCE!',
-        duration: const Duration(milliseconds: 1800),
-      );
+      _setStatus('LAST CHANCE!', duration: const Duration(milliseconds: 1800));
       return; // Player lives!
     }
 
     isDead = true;
-    shakeTimeLeft = 0.5;
+    shakeTimeLeft = shakeSeconds;
+    shakeElapsed = 0;
     _playHapticHeavy();
     _playSound('death.wav');
     final isNewBest = score > bestScore;
@@ -2926,7 +3131,11 @@ class BlockDashGame extends FlameGame {
     for (var i = 0; i < particleBurstCount; i++) {
       final angle = math.pi * 2 * i / particleBurstCount;
       final speed = 70 + random.nextDouble() * 65;
-      final color = _particleColors[random.nextInt(_particleColors.length)];
+      final color = i % 4 == 0
+          ? Colors.white
+          : i.isEven
+          ? _lightenColor(runAccentColor, 40)
+          : runAccentColor;
       particles.add(
         Particle(
           position: Offset(x, y),
@@ -2964,11 +3173,14 @@ class BlockDashGame extends FlameGame {
       shakeOffset = Offset.zero;
       return;
     }
+    shakeElapsed += dt;
     shakeTimeLeft = math.max(0, shakeTimeLeft - dt);
-    final strength = 12 * (shakeTimeLeft / 0.5);
+    final fade = (shakeTimeLeft / shakeSeconds).clamp(0.0, 1.0);
+    final strength = 10 * fade * fade;
+    final wobble = shakeElapsed * 44;
     shakeOffset = Offset(
-      (random.nextDouble() * 2 - 1) * strength,
-      (random.nextDouble() * 2 - 1) * strength * 0.35,
+      math.sin(wobble) * strength,
+      math.sin(wobble * 1.47) * strength * 0.35,
     );
   }
 
@@ -2982,25 +3194,155 @@ class BlockDashGame extends FlameGame {
     if (_GameSettings.vibrationEnabled(prefs)) HapticFeedback.heavyImpact();
   }
 
+  Future<void> _createSoundPlayers(
+    String fileName,
+    List<AudioPlayer> target,
+    int count,
+  ) async {
+    final players = await Future.wait<AudioPlayer>(
+      List.generate(count, (_) async {
+        final player = AudioPlayer()..audioCache = FlameAudio.audioCache;
+        await player.setPlayerMode(PlayerMode.lowLatency);
+        await player.setReleaseMode(ReleaseMode.stop);
+        await player.setSource(AssetSource(fileName));
+        return player;
+      }),
+    );
+    target.addAll(players);
+  }
+
+  Future<void> _createSoundPool(
+    String fileName,
+    int maxPlayers,
+    void Function(AudioPool pool) assign,
+  ) async {
+    assign(await FlameAudio.createPool(fileName, maxPlayers: maxPlayers));
+  }
+
   void _playSound(String fileName) {
     if (!_GameSettings.sfxEnabled(prefs)) return;
     if (fileName == 'move.wav') {
-      unawaited(_moveSoundPool?.start(volume: 0.65));
+      _playMoveSound();
       return;
     }
     if (fileName == 'combo.wav') {
-      unawaited(_comboSoundPool?.start(volume: 0.65));
+      unawaited(_comboSoundPool?.start(volume: 0.58));
       return;
     }
-    FlameAudio.play(fileName, volume: 0.65);
+    if (fileName == 'combo_milestone.wav') {
+      unawaited(_comboMilestoneSoundPool?.start(volume: 0.68));
+      return;
+    }
+    if (fileName == 'bonus.wav') {
+      unawaited(_bonusSoundPool?.start(volume: 0.66));
+      return;
+    }
+    if (fileName == 'near_miss.wav') {
+      unawaited(_nearMissSoundPool?.start(volume: 0.46));
+      return;
+    }
+    if (fileName == 'low_timer.wav') {
+      unawaited(_lowTimerSoundPool?.start(volume: 0.48));
+      return;
+    }
+    if (fileName == 'fever.wav') {
+      unawaited(_feverSoundPool?.start(volume: 0.68));
+      return;
+    }
+    final volume = fileName == 'death.wav'
+        ? 0.58
+        : fileName == 'new_best.wav'
+        ? 0.64
+        : 0.6;
+    FlameAudio.play(fileName, volume: volume);
+  }
+
+  void _playMoveSound() {
+    if (_moveSoundPlayers.isEmpty) {
+      unawaited(FlameAudio.play('move.wav', volume: 0.58));
+      return;
+    }
+
+    final player = _moveSoundPlayers[_moveSoundCursor];
+    _moveSoundCursor = (_moveSoundCursor + 1) % _moveSoundPlayers.length;
+    final comboStep = comboCount.clamp(0, 12).toDouble();
+    final runProgress = (score / 900).clamp(0.0, 1.0).toDouble();
+    final speedProgress =
+        ((baseMoveSeconds - currentSpeed) / (baseMoveSeconds - minMoveSeconds))
+            .clamp(0.0, 1.0)
+            .toDouble();
+    final rate =
+        (1 + comboStep * 0.032 + runProgress * 0.14 + speedProgress * 0.18)
+            .clamp(1.0, 1.55)
+            .toDouble();
+    final volume = (0.54 + speedProgress * 0.06).clamp(0.54, 0.6).toDouble();
+    unawaited(_startPitchedSound(player, rate, volume: volume));
+  }
+
+  void _playTimerRefillSound(double refillAmount) {
+    if (!_GameSettings.sfxEnabled(prefs) || refillAmount <= 0.5) return;
+    if (_timerRefillSoundPlayers.isEmpty) {
+      unawaited(FlameAudio.play('timer_refill.wav', volume: 0.42));
+      return;
+    }
+
+    final player = _timerRefillSoundPlayers[_timerRefillSoundCursor];
+    _timerRefillSoundCursor =
+        (_timerRefillSoundCursor + 1) % _timerRefillSoundPlayers.length;
+    final fillRatio = (refillAmount / timerRefill).clamp(0.0, 1.5).toDouble();
+    final comboLift = comboCount.clamp(0, 8).toDouble() * 0.012;
+    final rate = (0.96 + fillRatio * 0.16 + comboLift)
+        .clamp(0.96, 1.28)
+        .toDouble();
+    unawaited(_startPitchedSound(player, rate, volume: 0.42));
+  }
+
+  Future<void> _startPitchedSound(
+    AudioPlayer player,
+    double rate, {
+    required double volume,
+  }) async {
+    try {
+      await player.stop();
+      await player.setPlaybackRate(rate);
+      await player.setVolume(volume);
+      await player.resume();
+    } catch (_) {
+      // If a platform rejects playback-rate changes, still play the cached cue.
+      await player.setVolume(volume);
+      await player.resume();
+    }
   }
 
   void _disposeAudioPools() {
-    final pools = [_moveSoundPool, _comboSoundPool].whereType<AudioPool>();
-    _moveSoundPool = null;
+    final movePlayers = List<AudioPlayer>.of(_moveSoundPlayers);
+    final refillPlayers = List<AudioPlayer>.of(_timerRefillSoundPlayers);
+    final pools = [
+      _comboSoundPool,
+      _comboMilestoneSoundPool,
+      _bonusSoundPool,
+      _nearMissSoundPool,
+      _lowTimerSoundPool,
+      _feverSoundPool,
+    ].whereType<AudioPool>();
+    _moveSoundPlayers.clear();
+    _timerRefillSoundPlayers.clear();
     _comboSoundPool = null;
-    if (pools.isNotEmpty) {
-      unawaited(Future.wait(pools.map((p) => p.dispose())));
+    _comboMilestoneSoundPool = null;
+    _bonusSoundPool = null;
+    _nearMissSoundPool = null;
+    _lowTimerSoundPool = null;
+    _feverSoundPool = null;
+    if (pools.isNotEmpty ||
+        movePlayers.isNotEmpty ||
+        refillPlayers.isNotEmpty) {
+      unawaited(
+        Future.wait([
+          ...pools.map((p) => p.dispose()),
+          ...movePlayers.map((p) => p.dispose()),
+          ...refillPlayers.map((p) => p.dispose()),
+        ]),
+      );
     }
   }
 }
