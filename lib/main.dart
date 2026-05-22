@@ -183,11 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   const Spacer(flex: 2),
-                  const _HomeBlocks(),
-                  const SizedBox(height: BlockDashSpacing.md),
                   const _BlockTitle(text: 'BLOCK\nDASH'),
-                  const SizedBox(height: BlockDashSpacing.md),
-                  _SubTag(text: 'STACK · DODGE · WIN'),
                   const Spacer(flex: 2),
                   _BigButton(
                     label: 'PLAY',
@@ -200,8 +196,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       await _audioPreloadFuture;
                       if (!context.mounted) return;
                       Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => GameScreen(prefs: widget.prefs),
+                        _instantRoute<void>(
+                          (_) => GameScreen(prefs: widget.prefs),
                         ),
                       );
                     },
@@ -243,6 +239,14 @@ Future<void> _showSettingsDialog(
     context: context,
     barrierColor: const Color(0xAA071431),
     builder: (_) => _SettingsDialog(prefs: prefs),
+  );
+}
+
+PageRouteBuilder<T> _instantRoute<T>(WidgetBuilder builder) {
+  return PageRouteBuilder<T>(
+    pageBuilder: (context, _, _) => builder(context),
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: Duration.zero,
   );
 }
 
@@ -691,40 +695,6 @@ Future<void> _showInfoDialog(
   );
 }
 
-class _HomeBlocks extends StatelessWidget {
-  const _HomeBlocks();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 80,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned(
-            left: BlockDashSpacing.sm,
-            child: Transform.rotate(
-              angle: -0.22,
-              child: _MiniBlock(color: BlockDashColors.blockRed, size: 64),
-            ),
-          ),
-          Positioned(
-            right: BlockDashSpacing.sm,
-            child: Transform.rotate(
-              angle: 0.18,
-              child: _MiniBlock(color: BlockDashColors.blockGreen, size: 56),
-            ),
-          ),
-          Transform.rotate(
-            angle: 0.0,
-            child: _MiniBlock(color: BlockDashColors.blockYellow, size: 52),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _MiniBlock extends StatelessWidget {
   const _MiniBlock({required this.color, this.size = 56});
 
@@ -761,39 +731,6 @@ class _MiniBlock extends StatelessWidget {
             color: BlockDashColors.white55,
             borderRadius: BorderRadius.circular(BlockDashSpacing.blockRadius),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SubTag extends StatelessWidget {
-  const _SubTag({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: BlockDashSpacing.sm,
-        vertical: BlockDashSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0x401E72E8),
-        borderRadius: BorderRadius.circular(BlockDashSpacing.blockRadius),
-        border: Border.all(
-          color: BlockDashColors.cyan.withValues(alpha: 0.55),
-          width: 2,
-        ),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.5,
         ),
       ),
     );
@@ -1131,8 +1068,8 @@ class _GameScreenState extends State<GameScreen> {
   void _openGameOver(GameResult result) {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => GameOverScreen(prefs: widget.prefs, result: result),
+      _instantRoute<void>(
+        (_) => GameOverScreen(prefs: widget.prefs, result: result),
       ),
     );
   }
@@ -1448,9 +1385,7 @@ class GameOverScreen extends StatelessWidget {
                 shadowColor: const Color(0xAAFF6000),
                 tall: true,
                 onPressed: () => Navigator.of(context).pushReplacement(
-                  MaterialPageRoute<void>(
-                    builder: (_) => GameScreen(prefs: prefs),
-                  ),
+                  _instantRoute<void>((_) => GameScreen(prefs: prefs)),
                 ),
               ),
               const SizedBox(height: BlockDashSpacing.sm),
@@ -1461,9 +1396,7 @@ class GameOverScreen extends StatelessWidget {
                 accentColor: const Color(0xFF52E868),
                 shadowColor: const Color(0xAA1A8830),
                 onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute<void>(
-                    builder: (_) => HomeScreen(prefs: prefs),
-                  ),
+                  _instantRoute<void>((_) => HomeScreen(prefs: prefs)),
                   (_) => false,
                 ),
               ),
