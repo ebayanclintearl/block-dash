@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Block Dash Support</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #1255cc;
+      --bg2: #183080;
+      --card: rgba(7, 20, 49, 0.72);
+      --text: #ffffff;
+      --muted: #b0d8ff;
+      --yellow: #ffd600;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, var(--bg), #1a6ad8 48%, #3a9aef);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    main {
+      width: min(720px, 100%);
+      background: var(--card);
+      border: 2px solid rgba(176, 216, 255, 0.35);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 40px;
+      line-height: 1;
+    }
+    p {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.5;
+      margin: 0 0 24px;
+    }
+    nav {
+      display: grid;
+      gap: 16px;
+    }
+    a {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      background: var(--bg2);
+      border: 2px solid rgba(176, 216, 255, 0.24);
+    }
+    a:hover,
+    a:focus {
+      border-color: var(--yellow);
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Block Dash</h1>
+    <p>Support, privacy, and terms for the Block Dash mobile game.</p>
+    <nav aria-label="Support links">
+      <a href="./privacy-policy.html">Privacy Policy</a>
+      <a href="./terms-of-service.html">Terms of Service</a>
+      <a href="./contact-us.html">Contact Us</a>
+    </nav>
+  </main>
+</body>
+</html>
