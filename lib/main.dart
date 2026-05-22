@@ -9,6 +9,7 @@ import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -137,6 +138,15 @@ const _blockDashAudioFiles = [
 ];
 
 const _blockDashLogoAsset = 'assets/images/block_dash_logo.png';
+final _blockDashPrivacyUri = Uri.parse(
+  'https://ebayanclintearl.github.io/block-dash/privacy-policy.html',
+);
+final _blockDashTermsUri = Uri.parse(
+  'https://ebayanclintearl.github.io/block-dash/terms-of-service.html',
+);
+final _blockDashContactUri = Uri.parse(
+  'https://ebayanclintearl.github.io/block-dash/contact-us.html',
+);
 
 Future<void>? _blockDashAudioPreloadFuture;
 
@@ -258,15 +268,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: BlockDashSpacing.sm),
-                  _BigButton(
-                    label: 'RATE US',
-                    icon: Icons.star_rate_rounded,
-                    color: BlockDashColors.blockGreen,
-                    accentColor: const Color(0xFF36D64F),
-                    shadowColor: const Color(0xAA126E26),
-                    onPressed: () => _showRateUsDialog(context),
-                  ),
                   const Spacer(),
                 ],
               ),
@@ -303,64 +304,6 @@ PageRouteBuilder<T> _instantRoute<T>(WidgetBuilder builder) {
     pageBuilder: (context, _, _) => builder(context),
     transitionDuration: Duration.zero,
     reverseTransitionDuration: Duration.zero,
-  );
-}
-
-Future<void> _showRateUsDialog(BuildContext context) {
-  return showDialog<void>(
-    context: context,
-    barrierColor: const Color(0x99071431),
-    builder: (context) => AlertDialog(
-      backgroundColor: BlockDashColors.bgTop,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(BlockDashSpacing.panelRadius),
-      ),
-      titlePadding: const EdgeInsets.fromLTRB(
-        BlockDashSpacing.sm,
-        BlockDashSpacing.sm,
-        BlockDashSpacing.sm,
-        BlockDashSpacing.xs,
-      ),
-      contentPadding: const EdgeInsets.all(BlockDashSpacing.sm),
-      actionsPadding: const EdgeInsets.fromLTRB(
-        BlockDashSpacing.sm,
-        0,
-        BlockDashSpacing.sm,
-        BlockDashSpacing.sm,
-      ),
-      title: const Text(
-        'Rate Us',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontWeight: FontWeight.w900),
-      ),
-      content: const Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
-              Icon(Icons.star_rounded, color: BlockDashColors.yellow, size: 32),
-            ],
-          ),
-          SizedBox(height: BlockDashSpacing.sm),
-          Text(
-            'Thanks for supporting Block Dash.',
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-      actionsAlignment: MainAxisAlignment.center,
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('CLOSE'),
-        ),
-      ],
-    ),
   );
 }
 
@@ -551,38 +494,27 @@ class _SettingsDialogState extends State<_SettingsDialog> {
                             _SettingsLinkRow(
                               icon: Icons.description_rounded,
                               label: 'Terms of Service',
-                              onTap: () => _showInfoDialog(
+                              onTap: () => _openExternalLink(
                                 context,
-                                title: 'Terms of Service',
-                                body:
-                                    'Block Dash is provided for entertainment. '
-                                    'By playing, you agree to use the game fairly '
-                                    'and follow applicable app store rules.',
+                                _blockDashTermsUri,
                               ),
                             ),
                             const _SettingsDivider(),
                             _SettingsLinkRow(
                               icon: Icons.privacy_tip_rounded,
                               label: 'Privacy Policy',
-                              onTap: () => _showInfoDialog(
+                              onTap: () => _openExternalLink(
                                 context,
-                                title: 'Privacy Policy',
-                                body:
-                                    'Block Dash stores your settings and best '
-                                    'score on this device. This build does not '
-                                    'collect personal information.',
+                                _blockDashPrivacyUri,
                               ),
                             ),
                             const _SettingsDivider(),
                             _SettingsLinkRow(
                               icon: Icons.mail_rounded,
                               label: 'Contact Us',
-                              onTap: () => _showInfoDialog(
+                              onTap: () => _openExternalLink(
                                 context,
-                                title: 'Contact Us',
-                                body:
-                                    'For support, feedback, or questions, add '
-                                    'your support email or help center link here.',
+                                _blockDashContactUri,
                               ),
                             ),
                           ],
@@ -714,39 +646,14 @@ class _SettingsDivider extends StatelessWidget {
   }
 }
 
-Future<void> _showInfoDialog(
-  BuildContext context, {
-  required String title,
-  required String body,
-}) {
-  return showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: BlockDashColors.bgTop,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(BlockDashSpacing.panelRadius),
-      ),
-      titlePadding: const EdgeInsets.fromLTRB(
-        BlockDashSpacing.sm,
-        BlockDashSpacing.sm,
-        BlockDashSpacing.sm,
-        BlockDashSpacing.xs,
-      ),
-      contentPadding: const EdgeInsets.all(BlockDashSpacing.sm),
-      actionsPadding: const EdgeInsets.fromLTRB(
-        BlockDashSpacing.sm,
-        0,
-        BlockDashSpacing.sm,
-        BlockDashSpacing.sm,
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
-      content: Text(body),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('OK'),
-        ),
-      ],
+Future<void> _openExternalLink(BuildContext context, Uri uri) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (launched) return;
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text('Could not open ${uri.toString()}'),
+      behavior: SnackBarBehavior.floating,
     ),
   );
 }

@@ -14,7 +14,7 @@ void main() {
 
     expect(find.bySemanticsLabel('Block Dash logo'), findsOneWidget);
     expect(find.text('PLAY'), findsOneWidget);
-    expect(find.text('RATE US'), findsOneWidget);
+    expect(find.text('RATE US'), findsNothing);
     expect(find.text('SETTINGS'), findsNothing);
     expect(find.byIcon(Icons.settings_rounded), findsOneWidget);
 

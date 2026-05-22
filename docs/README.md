@@ -4,10 +4,8 @@ This folder is ready for free GitHub Pages hosting.
 
 ## Fast Free Setup
 
-1. Replace `YOUR_SUPPORT_EMAIL@example.com` in:
-   - `privacy-policy.html`
-   - `terms-of-service.html`
-   - `contact-us.html`
+1. Confirm the support email is correct:
+   `ebayanclintearl@gmail.com`
 
 2. Push this repository to GitHub.
 
