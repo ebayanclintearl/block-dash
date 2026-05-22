@@ -117,14 +117,10 @@ Color _lightenColor(Color color, int amount) {
 
 class _GameSettings {
   static const sfxKey = 'blockDashSfxEnabled';
-  static const backgroundMusicKey = 'blockDashBackgroundMusicEnabled';
   static const vibrationKey = 'blockDashVibrationEnabled';
 
   static bool sfxEnabled(SharedPreferences prefs) =>
       prefs.getBool(sfxKey) ?? true;
-
-  static bool backgroundMusicEnabled(SharedPreferences prefs) =>
-      prefs.getBool(backgroundMusicKey) ?? false;
 
   static bool vibrationEnabled(SharedPreferences prefs) =>
       prefs.getBool(vibrationKey) ?? true;
@@ -141,6 +137,9 @@ const _blockDashAudioFiles = [
   'near_miss.wav',
   'low_timer.wav',
   'fever.wav',
+  'combo_break.wav',
+  'tick.wav',
+  'last_chance.wav',
 ];
 
 Future<void>? _blockDashAudioPreloadFuture;
@@ -361,27 +360,18 @@ class _SettingsDialog extends StatefulWidget {
 
 class _SettingsDialogState extends State<_SettingsDialog> {
   late bool _sfxEnabled;
-  late bool _backgroundMusicEnabled;
   late bool _vibrationEnabled;
 
   @override
   void initState() {
     super.initState();
     _sfxEnabled = _GameSettings.sfxEnabled(widget.prefs);
-    _backgroundMusicEnabled = _GameSettings.backgroundMusicEnabled(
-      widget.prefs,
-    );
     _vibrationEnabled = _GameSettings.vibrationEnabled(widget.prefs);
   }
 
   Future<void> _setSfxEnabled(bool value) async {
     setState(() => _sfxEnabled = value);
     await widget.prefs.setBool(_GameSettings.sfxKey, value);
-  }
-
-  Future<void> _setBackgroundMusicEnabled(bool value) async {
-    setState(() => _backgroundMusicEnabled = value);
-    await widget.prefs.setBool(_GameSettings.backgroundMusicKey, value);
   }
 
   Future<void> _setVibrationEnabled(bool value) async {
@@ -489,13 +479,6 @@ class _SettingsDialogState extends State<_SettingsDialog> {
                               label: 'SFX',
                               value: _sfxEnabled,
                               onChanged: _setSfxEnabled,
-                            ),
-                            const _SettingsDivider(),
-                            _SettingsToggleRow(
-                              icon: Icons.music_note_rounded,
-                              label: 'Background Music',
-                              value: _backgroundMusicEnabled,
-                              onChanged: _setBackgroundMusicEnabled,
                             ),
                             const _SettingsDivider(),
                             _SettingsToggleRow(
@@ -1189,51 +1172,23 @@ class _GameScreenState extends State<GameScreen> {
                   return const _GameLoadingView();
                 }
 
-                return Stack(
-                  children: [
-                    GameWidget(
-                      game: _game,
-                      loadingBuilder: (_) => const _GameLoadingView(),
-                    ),
-                    Positioned.fill(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTapDown: (_) =>
-                                  _game.movePlayer(Direction.left),
-                            ),
+                return TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOut,
+                  builder: (_, opacity, _) {
+                    return Stack(
+                      children: [
+                        Opacity(opacity: opacity, child: _buildGameLayer()),
+                        IgnorePointer(
+                          child: Opacity(
+                            opacity: 1 - opacity,
+                            child: const _GameLoadingView(),
                           ),
-                          Expanded(
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTapDown: (_) =>
-                                  _game.movePlayer(Direction.right),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                        child: Column(
-                          children: [
-                            _GameHud(game: _game),
-                            const SizedBox(height: 8),
-                            _TimerBar(game: _game),
-                            const SizedBox(height: BlockDashSpacing.sm),
-                            // Fixed-height slot for combo — no layout shift
-                            _ComboPopup(game: _game),
-                            const SizedBox(height: BlockDashSpacing.xs),
-                            // Status banner for fever / last-chance / milestone
-                            _StatusBanner(game: _game),
-                          ],
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 );
               },
             );
@@ -1242,12 +1197,112 @@ class _GameScreenState extends State<GameScreen> {
       ),
     );
   }
+
+  Widget _buildGameLayer() {
+    return Stack(
+      children: [
+        GameWidget(
+          game: _game,
+          loadingBuilder: (_) => const _GameLoadingView(),
+        ),
+        Positioned.fill(
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (_) => _game.movePlayer(Direction.left),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (_) => _game.movePlayer(Direction.right),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Column(
+              children: [
+                _GameHud(game: _game),
+                const SizedBox(height: 8),
+                _TimerBar(game: _game),
+                const SizedBox(height: BlockDashSpacing.sm),
+                _ComboPopup(game: _game),
+                const SizedBox(height: BlockDashSpacing.xs),
+                _StatusBanner(game: _game),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _GameLoadingView extends StatelessWidget {
+class _GameLoadingView extends StatefulWidget {
   const _GameLoadingView({this.error});
 
   final Object? error;
+
+  @override
+  State<_GameLoadingView> createState() => _GameLoadingViewState();
+}
+
+class _GameLoadingViewState extends State<_GameLoadingView>
+    with TickerProviderStateMixin {
+  static const _phrases = [
+    'LOADING...',
+    'SHUFFLING BLOCKS...',
+    'DODGING HAZARDS...',
+    'CHARGING FEVER...',
+  ];
+
+  late final List<AnimationController> _blockControllers;
+  late final AnimationController _phraseController;
+  int _phraseIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _blockControllers = List.generate(3, (index) {
+      final controller = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 720),
+      );
+      Future<void>.delayed(Duration(milliseconds: index * 120), () {
+        if (mounted) controller.repeat(reverse: true);
+      });
+      return controller;
+    });
+    _phraseController =
+        AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 800),
+          )
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              setState(
+                () => _phraseIndex = (_phraseIndex + 1) % _phrases.length,
+              );
+              _phraseController.forward(from: 0);
+            }
+          })
+          ..forward();
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _blockControllers) {
+      controller.dispose();
+    }
+    _phraseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1257,19 +1312,54 @@ class _GameLoadingView extends StatelessWidget {
           painter: _BgPainter(constraints.biggest),
           child: SizedBox.expand(
             child: Center(
-              child: error == null
-                  ? const SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 5,
-                      ),
+              child: widget.error == null
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const _BlockTitle(text: 'BLOCK\nDASH'),
+                        const SizedBox(height: BlockDashSpacing.lg),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _LoadingMiniBlock(
+                              controller: _blockControllers[0],
+                              color: BlockDashColors.blockBlue,
+                            ),
+                            const SizedBox(width: BlockDashSpacing.sm),
+                            _LoadingMiniBlock(
+                              controller: _blockControllers[1],
+                              color: BlockDashColors.blockGreen,
+                            ),
+                            const SizedBox(width: BlockDashSpacing.sm),
+                            _LoadingMiniBlock(
+                              controller: _blockControllers[2],
+                              color: BlockDashColors.blockOrange,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: BlockDashSpacing.md),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(opacity: animation, child: child),
+                          child: Text(
+                            _phrases[_phraseIndex],
+                            key: ValueKey<int>(_phraseIndex),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ],
                     )
                   : Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
-                        'Could not load game.\n$error',
+                        'Could not load game.\n${widget.error}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white,
@@ -1282,6 +1372,35 @@ class _GameLoadingView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _LoadingMiniBlock extends StatelessWidget {
+  const _LoadingMiniBlock({required this.controller, required this.color});
+
+  final AnimationController controller;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final animation = CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeInOut,
+      reverseCurve: Curves.easeInOut,
+    );
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (_, child) {
+        final t = animation.value;
+        final scale = ui.lerpDouble(0.88, 1.12, t)!;
+        final dy = ui.lerpDouble(6, -8, t)!;
+        return Transform.translate(
+          offset: Offset(0, dy),
+          child: Transform.scale(scale: scale, child: child),
+        );
+      },
+      child: _MiniBlock(color: color, size: 40),
     );
   }
 }
@@ -1571,8 +1690,18 @@ class _CrownScore extends StatelessWidget {
 }
 
 // ─── Timer Bar ─────────────────────────────────────────────────────────────────
-class _TimerBar extends StatelessWidget {
+class _TimerBar extends StatefulWidget {
   const _TimerBar({required this.game});
+
+  final BlockDashGame game;
+
+  @override
+  State<_TimerBar> createState() => _TimerBarState();
+}
+
+class _TimerBarState extends State<_TimerBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _dangerPulseController;
 
   static const _trackWidth = 200.0;
   static const _trackPadding = BlockDashSpacing.xs;
@@ -1614,8 +1743,6 @@ class _TimerBar extends StatelessWidget {
     ),
   );
 
-  final BlockDashGame game;
-
   static BoxDecoration _fillDecorationFor(double value) {
     if (value <= 0.25) return _redFillDecoration;
     if (value <= 0.5) return _yellowFillDecoration;
@@ -1623,12 +1750,37 @@ class _TimerBar extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _dangerPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 333),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _dangerPulseController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Center(
       child: RepaintBoundary(
-        child: ValueListenableBuilder<double>(
-          valueListenable: game.timerNotifier,
-          builder: (_, value, _) {
+        child: AnimatedBuilder(
+          animation: Listenable.merge([
+            widget.game.timerNotifier,
+            _dangerPulseController,
+          ]),
+          builder: (_, _) {
+            final value = widget.game.timerNotifier.value;
+            final pulse = value <= 0.25
+                ? math.sin(_dangerPulseController.value * math.pi * 2) * 3.0
+                : 0.0;
+            final fillWidth = (_fillMaxWidth * value.clamp(0.0, 1.0) + pulse)
+                .clamp(0.0, _fillMaxWidth)
+                .toDouble();
             return Container(
               width: _trackWidth,
               height: _trackHeight,
@@ -1636,7 +1788,7 @@ class _TimerBar extends StatelessWidget {
               decoration: _trackDecoration,
               alignment: Alignment.centerLeft,
               child: AnimatedContainer(
-                width: _fillMaxWidth * value.clamp(0.0, 1.0),
+                width: fillWidth,
                 height: _fillHeight,
                 duration: _fillAnimationDuration,
                 curve: Curves.linear,
@@ -1651,8 +1803,18 @@ class _TimerBar extends StatelessWidget {
 }
 
 // ─── Combo Popup — shows fever state when active ────────────────────────────────
-class _ComboPopup extends StatelessWidget {
+class _ComboPopup extends StatefulWidget {
   const _ComboPopup({required this.game});
+
+  final BlockDashGame game;
+
+  @override
+  State<_ComboPopup> createState() => _ComboPopupState();
+}
+
+class _ComboPopupState extends State<_ComboPopup> {
+  double _popScale = 1;
+  int _previousCombo = 0;
 
   // Hot red/pink fever pill — same shape, hotter palette
   static const _feverDecoration = BoxDecoration(
@@ -1662,8 +1824,6 @@ class _ComboPopup extends StatelessWidget {
     ),
     border: Border.fromBorderSide(BorderSide(color: Color(0x77FFFFFF))),
   );
-
-  final BlockDashGame game;
 
   BoxDecoration _comboDecoration(Color color) {
     return BoxDecoration(
@@ -1677,35 +1837,73 @@ class _ComboPopup extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _previousCombo = widget.game.comboNotifier.value;
+    widget.game.comboNotifier.addListener(_handleComboChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ComboPopup oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.game == widget.game) return;
+    oldWidget.game.comboNotifier.removeListener(_handleComboChanged);
+    _previousCombo = widget.game.comboNotifier.value;
+    widget.game.comboNotifier.addListener(_handleComboChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.game.comboNotifier.removeListener(_handleComboChanged);
+    super.dispose();
+  }
+
+  void _handleComboChanged() {
+    final combo = widget.game.comboNotifier.value;
+    if (_previousCombo < 3 && combo >= 3) {
+      setState(() => _popScale = 0.4);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _popScale = 1);
+      });
+    }
+    _previousCombo = combo;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 40,
       child: RepaintBoundary(
         child: ListenableBuilder(
           listenable: Listenable.merge([
-            game.comboNotifier,
-            game.feverNotifier,
+            widget.game.comboNotifier,
+            widget.game.feverNotifier,
           ]),
           builder: (_, _) {
-            final combo = game.comboNotifier.value;
-            final fever = game.feverNotifier.value;
+            final combo = widget.game.comboNotifier.value;
+            final fever = widget.game.feverNotifier.value;
             if (combo < 3) return const SizedBox.shrink();
             return Center(
-              child: Container(
-                height: 32,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: BlockDashSpacing.sm,
-                ),
-                decoration: fever
-                    ? _feverDecoration
-                    : _comboDecoration(game.runAccentColor),
-                alignment: Alignment.center,
-                child: Text(
-                  fever ? '${combo}x FEVER!' : '${combo}x COMBO!',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
+              child: AnimatedScale(
+                scale: _popScale,
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.elasticOut,
+                child: Container(
+                  height: 32,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: BlockDashSpacing.sm,
+                  ),
+                  decoration: fever
+                      ? _feverDecoration
+                      : _comboDecoration(widget.game.runAccentColor),
+                  alignment: Alignment.center,
+                  child: Text(
+                    fever ? '${combo}x FEVER!' : '${combo}x COMBO!',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
@@ -1930,20 +2128,26 @@ class BlockDashGame extends FlameGame {
 
   /// Pre-allocated for the fever edge-glow overlay.
   final _feverEdgePaint = Paint();
+  final _hazardPulsePaint = Paint();
 
   /// Pre-allocated for the full-screen flash (milestone / last-chance).
   final _flashPaint = Paint();
 
   final _moveSoundPlayers = <AudioPlayer>[];
   final _timerRefillSoundPlayers = <AudioPlayer>[];
+  final _comboBreakSoundPlayers = <AudioPlayer>[];
+  final _tickSoundPlayers = <AudioPlayer>[];
   int _moveSoundCursor = 0;
   int _timerRefillSoundCursor = 0;
+  int _comboBreakSoundCursor = 0;
+  int _tickSoundCursor = 0;
   AudioPool? _comboSoundPool;
   AudioPool? _comboMilestoneSoundPool;
   AudioPool? _bonusSoundPool;
   AudioPool? _nearMissSoundPool;
   AudioPool? _lowTimerSoundPool;
   AudioPool? _feverSoundPool;
+  AudioPool? _lastChanceSoundPool;
 
   // ── Layout ─────────────────────────────────────────────────────────────────
   late double cellSize;
@@ -1974,6 +2178,8 @@ class BlockDashGame extends FlameGame {
   // ── Fever mode ─────────────────────────────────────────────────────────────
   bool isFeverMode = false;
   double feverPulse = 0;
+  double hazardPulseTime = 0;
+  double bonusShimmerTime = 0;
 
   // ── Milestones / last chance ───────────────────────────────────────────────
   int lastMilestone = 0;
@@ -1990,6 +2196,7 @@ class BlockDashGame extends FlameGame {
   double currentSpeed = baseMoveSeconds;
   double currentDrain = baseTimerDrain;
   bool lowTimerWarningReady = true;
+  double _criticalTickElapsed = 0;
 
   // ── Move animation ─────────────────────────────────────────────────────────
   bool isMoving = false;
@@ -2006,6 +2213,9 @@ class BlockDashGame extends FlameGame {
   int pendingSteps = 0;
   bool pendingDeath = false;
   int pendingBonusCollects = 0;
+  double landSquash = 1.0;
+  double landSquashVelocity = 0.0;
+  int _pitchLane = 0;
 
   // ── Effects ────────────────────────────────────────────────────────────────
   Offset shakeOffset = Offset.zero;
@@ -2023,6 +2233,8 @@ class BlockDashGame extends FlameGame {
     await Future.wait<void>([
       _createSoundPlayers('move.wav', _moveSoundPlayers, 4),
       _createSoundPlayers('timer_refill.wav', _timerRefillSoundPlayers, 4),
+      _createSoundPlayers('combo_break.wav', _comboBreakSoundPlayers, 3),
+      _createSoundPlayers('tick.wav', _tickSoundPlayers, 2),
       _createSoundPool('combo.wav', 3, (pool) => _comboSoundPool = pool),
       _createSoundPool(
         'combo_milestone.wav',
@@ -2033,6 +2245,11 @@ class BlockDashGame extends FlameGame {
       _createSoundPool('near_miss.wav', 2, (pool) => _nearMissSoundPool = pool),
       _createSoundPool('low_timer.wav', 2, (pool) => _lowTimerSoundPool = pool),
       _createSoundPool('fever.wav', 2, (pool) => _feverSoundPool = pool),
+      _createSoundPool(
+        'last_chance.wav',
+        1,
+        (pool) => _lastChanceSoundPool = pool,
+      ),
     ]);
     await Future<void>.delayed(Duration.zero);
     resetGame();
@@ -2093,6 +2310,8 @@ class BlockDashGame extends FlameGame {
 
     isFeverMode = false;
     feverPulse = 0;
+    hazardPulseTime = 0;
+    bonusShimmerTime = 0;
     lastMilestone = 0;
     hasLastChance = true;
     screenFlashAlpha = 0;
@@ -2104,9 +2323,13 @@ class BlockDashGame extends FlameGame {
     currentSpeed = baseMoveSeconds;
     currentDrain = baseTimerDrain;
     lowTimerWarningReady = true;
+    _criticalTickElapsed = 0;
     isMoving = false;
     isDead = false;
     cachedEasedMoveT = 1;
+    landSquash = 1;
+    landSquashVelocity = 0;
+    _pitchLane = 0;
     comboSoundCooldown = 0;
     shakeOffset = Offset.zero;
     shakeTimeLeft = 0;
@@ -2222,6 +2445,7 @@ class BlockDashGame extends FlameGame {
       destWorldY - _cameraAnchorY,
     );
 
+    _pitchLane = isForward ? math.min(_pitchLane + 1, 4) : 0;
     _increaseCombo(moveKind);
     _playSound('move.wav');
     _playHapticSelection();
@@ -2239,6 +2463,9 @@ class BlockDashGame extends FlameGame {
     _updateParticles(dt);
     _updateScorePopups(dt);
     _updateShake(dt);
+    _updateLandingSquash(dt);
+    hazardPulseTime += dt;
+    bonusShimmerTime += dt;
 
     // Fever pulse (used for edge-glow animation)
     if (isFeverMode) feverPulse += dt * 5.0;
@@ -2267,6 +2494,7 @@ class BlockDashGame extends FlameGame {
     timerNotifyElapsed += dt;
     _syncTimerNotifier();
     _updateLowTimerWarning();
+    _updateCriticalTimerTick(dt);
     if (timerValue <= 0) {
       unawaited(_triggerDeath());
       return;
@@ -2284,6 +2512,7 @@ class BlockDashGame extends FlameGame {
 
       if (t >= 1) {
         isMoving = false;
+        landSquashVelocity = -0.45;
         cachedEasedMoveT = 1;
         playerCol = pendingCol;
         playerRow = pendingRow;
@@ -2627,13 +2856,23 @@ class BlockDashGame extends FlameGame {
   void _renderHazards(Canvas canvas) {
     final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
+    final picture = _cachedBlockPictureFor(BlockDashColors.blockRed);
+    if (picture == null) return;
     for (var row = firstRow; row <= lastRow; row++) {
       final rowMask = hazardsByRow[row] ?? 0;
       if (rowMask == 0) continue;
       final y = _rowToY(row) - worldScrollY;
-      final picture = _cachedBlockPictureFor(BlockDashColors.blockRed);
-      if (picture == null) continue;
+      final opacity = 0.91 + 0.09 * math.sin(hazardPulseTime * 4.5 + row * 0.8);
+      _hazardPulsePaint.color = _colorWithAlpha(
+        Colors.white,
+        (opacity * 255).round().clamp(0, 255),
+      );
+      canvas.saveLayer(
+        Rect.fromLTWH(gridLeft, y, gridWidth, cellSize + 8),
+        _hazardPulsePaint,
+      );
       _drawPictureRow(canvas, picture, y, rowMask);
+      canvas.restore();
     }
   }
 
@@ -2641,13 +2880,24 @@ class BlockDashGame extends FlameGame {
   void _renderBonusBlocks(Canvas canvas) {
     final firstRow = ((worldScrollY - rowHeight) / rowHeight).floor();
     final lastRow = ((worldScrollY + size.y + rowHeight) / rowHeight).ceil();
+    final picture = _cachedBlockPictureFor(BlockDashColors.blockYellow);
+    if (picture == null) return;
     for (var row = firstRow; row <= lastRow; row++) {
       final rowMask = bonusByRow[row] ?? 0;
       if (rowMask == 0) continue;
       final y = _rowToY(row) - worldScrollY;
-      final picture = _cachedBlockPictureFor(BlockDashColors.blockYellow);
-      if (picture == null) continue;
-      _drawPictureRow(canvas, picture, y, rowMask);
+      for (var col = 0; col < cols; col++) {
+        if ((rowMask & _colBit(col)) == 0) continue;
+        final x = _screenX(col);
+        final center = Offset(x + cellSize / 2, y + cellSize / 2);
+        final angle = math.sin(bonusShimmerTime * 2.2 + col * 1.1) * 0.045;
+        canvas.save();
+        canvas.translate(center.dx, center.dy);
+        canvas.rotate(angle);
+        canvas.translate(-center.dx, -center.dy);
+        _drawPictureAt(canvas, picture, x, y);
+        canvas.restore();
+      }
     }
   }
 
@@ -2655,15 +2905,12 @@ class BlockDashGame extends FlameGame {
   void _renderFeverOverlay(Canvas canvas) {
     if (!isFeverMode) return;
     final pulse = math.sin(feverPulse) * 0.5 + 0.5; // 0..1
-    final alpha = (pulse * 50).round();
-    _feverEdgePaint.color = Color.fromARGB(alpha, 255, 70, 0);
-    const edgeW = 32.0;
-    final w = size.x;
-    final h = size.y;
-    canvas.drawRect(Rect.fromLTWH(0, 0, edgeW, h), _feverEdgePaint);
-    canvas.drawRect(Rect.fromLTWH(w - edgeW, 0, edgeW, h), _feverEdgePaint);
-    canvas.drawRect(Rect.fromLTWH(0, 0, w, edgeW), _feverEdgePaint);
-    canvas.drawRect(Rect.fromLTWH(0, h - edgeW, w, edgeW), _feverEdgePaint);
+    final alpha = (pulse * 18).round();
+    _feverEdgePaint.color = Color.fromARGB(alpha, 255, 170, 42);
+    canvas.drawRect(
+      Rect.fromLTWH(gridLeft, 0, gridWidth, size.y),
+      _feverEdgePaint,
+    );
   }
 
   /// NEW: Full-screen colour flash for milestone / last-chance events.
@@ -2680,12 +2927,17 @@ class BlockDashGame extends FlameGame {
     final x = isMoving
         ? ui.lerpDouble(moveStartX, moveEndX, cachedEasedMoveT)!
         : _screenX(playerCol);
-    _drawCachedBlock(
-      canvas,
-      x,
-      playerScreenY,
-      isDead ? BlockDashColors.blockRed : runAccentColor,
-    );
+    final color = isDead ? BlockDashColors.blockRed : runAccentColor;
+    if (landSquash == 1) {
+      _drawCachedBlock(canvas, x, playerScreenY, color);
+      return;
+    }
+    final center = Offset(x + cellSize / 2, playerScreenY + cellSize / 2);
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(1.0, landSquash);
+    _drawCachedBlock(canvas, -cellSize / 2, -cellSize / 2, color);
+    canvas.restore();
   }
 
   void _drawCachedBlock(Canvas canvas, double x, double y, Color color) {
@@ -2791,15 +3043,17 @@ class BlockDashGame extends FlameGame {
   }
 
   void _renderScorePopups(Canvas canvas) {
-    for (final popup in scorePopups) {
+    for (var index = 0; index < scorePopups.length; index++) {
+      final popup = scorePopups[index];
       final progress = (popup.age / ScorePopup.life).clamp(0.0, 1.0);
       final scale = progress < 0.35
           ? ui.lerpDouble(1, 1.28, progress / 0.35)!
           : ui.lerpDouble(1.28, 0.82, (progress - 0.35) / 0.65)!;
       final painter = _scorePainterFor(popup.points);
+      final staggerX = (index % 3 - 1) * 14.0;
       final y = popup.worldPosition.dy - worldScrollY - progress * 70;
       canvas.save();
-      canvas.translate(popup.worldPosition.dx, y);
+      canvas.translate(popup.worldPosition.dx + staggerX, y);
       canvas.scale(scale);
       painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
       canvas.restore();
@@ -2998,6 +3252,8 @@ class BlockDashGame extends FlameGame {
   }
 
   void _resetCombo() {
+    final brokenComboCount = comboCount;
+    if (brokenComboCount >= 3) _playComboBreakSound(brokenComboCount);
     comboCount = 0;
     lastComboMove = null;
     comboTimeLeft = 0;
@@ -3044,6 +3300,19 @@ class BlockDashGame extends FlameGame {
     }
   }
 
+  void _updateCriticalTimerTick(double dt) {
+    final ratio = (timerValue / timerMax).clamp(0.0, 1.0);
+    if (ratio > 0.15 || isDead) {
+      _criticalTickElapsed = 0;
+      return;
+    }
+    _criticalTickElapsed += dt;
+    if (_criticalTickElapsed < 0.5) return;
+    _criticalTickElapsed = 0;
+    final rate = (1.0 + (0.15 - ratio) * 3.0).clamp(1.0, 1.45).toDouble();
+    _playCriticalTickSound(rate);
+  }
+
   // ── Difficulty ─────────────────────────────────────────────────────────────
 
   void _updateDifficulty() {
@@ -3070,6 +3339,9 @@ class BlockDashGame extends FlameGame {
       _triggerScreenFlash(BlockDashColors.orange, 0.65);
       _playHapticHeavy();
       _setStatus('LAST CHANCE!', duration: const Duration(milliseconds: 1800));
+      Future<void>.delayed(const Duration(milliseconds: 200), () {
+        if (!isDead) _playSound('last_chance.wav');
+      });
       return; // Player lives!
     }
 
@@ -3166,6 +3438,18 @@ class BlockDashGame extends FlameGame {
     scorePopups.removeWhere((p) => p.age >= ScorePopup.life);
   }
 
+  void _updateLandingSquash(double dt) {
+    landSquashVelocity += (1.0 - landSquash) * 28 * dt;
+    landSquashVelocity *= 0.72;
+    landSquash += landSquashVelocity * dt * 60;
+    if ((landSquash - 1).abs() < 0.001 && landSquashVelocity.abs() < 0.001) {
+      landSquash = 1;
+      landSquashVelocity = 0;
+    } else {
+      landSquash = landSquash.clamp(0.72, 1.18).toDouble();
+    }
+  }
+
   // ── Shake ──────────────────────────────────────────────────────────────────
 
   void _updateShake(double dt) {
@@ -3249,6 +3533,10 @@ class BlockDashGame extends FlameGame {
       unawaited(_feverSoundPool?.start(volume: 0.68));
       return;
     }
+    if (fileName == 'last_chance.wav') {
+      unawaited(_lastChanceSoundPool?.start(volume: 0.72));
+      return;
+    }
     final volume = fileName == 'death.wav'
         ? 0.58
         : fileName == 'new_best.wav'
@@ -3271,12 +3559,44 @@ class BlockDashGame extends FlameGame {
         ((baseMoveSeconds - currentSpeed) / (baseMoveSeconds - minMoveSeconds))
             .clamp(0.0, 1.0)
             .toDouble();
+    final feverBoost = isFeverMode ? 0.12 : 0.0;
     final rate =
-        (1 + comboStep * 0.032 + runProgress * 0.14 + speedProgress * 0.18)
-            .clamp(1.0, 1.55)
+        (1 +
+                comboStep * 0.032 +
+                runProgress * 0.14 +
+                speedProgress * 0.18 +
+                _pitchLane * 0.018 +
+                feverBoost)
+            .clamp(1.0, 1.67)
             .toDouble();
     final volume = (0.54 + speedProgress * 0.06).clamp(0.54, 0.6).toDouble();
     unawaited(_startPitchedSound(player, rate, volume: volume));
+  }
+
+  void _playComboBreakSound(int brokenComboCount) {
+    if (!_GameSettings.sfxEnabled(prefs)) return;
+    if (_comboBreakSoundPlayers.isEmpty) {
+      unawaited(FlameAudio.play('combo_break.wav', volume: 0.44));
+      return;
+    }
+    final player = _comboBreakSoundPlayers[_comboBreakSoundCursor];
+    _comboBreakSoundCursor =
+        (_comboBreakSoundCursor + 1) % _comboBreakSoundPlayers.length;
+    final rate = (0.9 + (brokenComboCount * 0.01).clamp(0.0, 0.15))
+        .clamp(0.9, 1.05)
+        .toDouble();
+    unawaited(_startPitchedSound(player, rate, volume: 0.44));
+  }
+
+  void _playCriticalTickSound(double rate) {
+    if (!_GameSettings.sfxEnabled(prefs)) return;
+    if (_tickSoundPlayers.isEmpty) {
+      unawaited(FlameAudio.play('tick.wav', volume: 0.42));
+      return;
+    }
+    final player = _tickSoundPlayers[_tickSoundCursor];
+    _tickSoundCursor = (_tickSoundCursor + 1) % _tickSoundPlayers.length;
+    unawaited(_startPitchedSound(player, rate, volume: 0.42));
   }
 
   void _playTimerRefillSound(double refillAmount) {
@@ -3317,6 +3637,8 @@ class BlockDashGame extends FlameGame {
   void _disposeAudioPools() {
     final movePlayers = List<AudioPlayer>.of(_moveSoundPlayers);
     final refillPlayers = List<AudioPlayer>.of(_timerRefillSoundPlayers);
+    final comboBreakPlayers = List<AudioPlayer>.of(_comboBreakSoundPlayers);
+    final tickPlayers = List<AudioPlayer>.of(_tickSoundPlayers);
     final pools = [
       _comboSoundPool,
       _comboMilestoneSoundPool,
@@ -3324,23 +3646,31 @@ class BlockDashGame extends FlameGame {
       _nearMissSoundPool,
       _lowTimerSoundPool,
       _feverSoundPool,
+      _lastChanceSoundPool,
     ].whereType<AudioPool>();
     _moveSoundPlayers.clear();
     _timerRefillSoundPlayers.clear();
+    _comboBreakSoundPlayers.clear();
+    _tickSoundPlayers.clear();
     _comboSoundPool = null;
     _comboMilestoneSoundPool = null;
     _bonusSoundPool = null;
     _nearMissSoundPool = null;
     _lowTimerSoundPool = null;
     _feverSoundPool = null;
+    _lastChanceSoundPool = null;
     if (pools.isNotEmpty ||
         movePlayers.isNotEmpty ||
-        refillPlayers.isNotEmpty) {
+        refillPlayers.isNotEmpty ||
+        comboBreakPlayers.isNotEmpty ||
+        tickPlayers.isNotEmpty) {
       unawaited(
         Future.wait([
           ...pools.map((p) => p.dispose()),
           ...movePlayers.map((p) => p.dispose()),
           ...refillPlayers.map((p) => p.dispose()),
+          ...comboBreakPlayers.map((p) => p.dispose()),
+          ...tickPlayers.map((p) => p.dispose()),
         ]),
       );
     }

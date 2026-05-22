@@ -22,7 +22,7 @@ void main() {
 
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('SFX'), findsOneWidget);
-    expect(find.text('Background Music'), findsOneWidget);
+    expect(find.text('Background Music'), findsNothing);
     expect(find.text('Vibration'), findsOneWidget);
     expect(find.text('Terms of Service'), findsOneWidget);
     expect(find.text('Privacy Policy'), findsOneWidget);
