@@ -151,9 +151,15 @@ final _blockDashContactUri = Uri.parse(
 Future<void>? _blockDashAudioPreloadFuture;
 
 Future<void> _preloadBlockDashAudio() {
-  return _blockDashAudioPreloadFuture ??= FlameAudio.audioCache.loadAll(
-    _blockDashAudioFiles,
-  );
+  return _blockDashAudioPreloadFuture ??= () async {
+    try {
+      await FlameAudio.audioCache
+          .loadAll(_blockDashAudioFiles)
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {
+      // Audio warmup is optional; never block app startup or gameplay.
+    }
+  }();
 }
 
 // ─── Splash Screen ────────────────────────────────────────────────────────────
@@ -227,12 +233,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final Future<void> _audioPreloadFuture;
-
   @override
   void initState() {
     super.initState();
-    _audioPreloadFuture = _preloadBlockDashAudio();
+    unawaited(_preloadBlockDashAudio());
   }
 
   @override
@@ -258,9 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     accentColor: const Color(0xFFFFD000),
                     shadowColor: const Color(0xAAFF6000),
                     tall: true,
-                    onPressed: () async {
-                      await _audioPreloadFuture;
-                      if (!context.mounted) return;
+                    onPressed: () {
                       Navigator.of(context).push(
                         _instantRoute<void>(
                           (_) => GameScreen(prefs: widget.prefs),
@@ -969,7 +971,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _loadGame(Size size) async {
-    await _preloadBlockDashAudio();
+    unawaited(_preloadBlockDashAudio());
     await Future<void>.delayed(Duration.zero);
     _game.onGameResize(Vector2(size.width, size.height));
     // ignore: invalid_use_of_internal_member
@@ -2133,29 +2135,46 @@ class BlockDashGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    await Future.wait<void>([
-      _createSoundPlayers('move.wav', _moveSoundPlayers, 4),
-      _createSoundPlayers('timer_refill.wav', _timerRefillSoundPlayers, 4),
-      _createSoundPlayers('combo_break.wav', _comboBreakSoundPlayers, 3),
-      _createSoundPlayers('tick.wav', _tickSoundPlayers, 2),
-      _createSoundPool('combo.wav', 3, (pool) => _comboSoundPool = pool),
-      _createSoundPool(
-        'combo_milestone.wav',
-        3,
-        (pool) => _comboMilestoneSoundPool = pool,
-      ),
-      _createSoundPool('bonus.wav', 3, (pool) => _bonusSoundPool = pool),
-      _createSoundPool('near_miss.wav', 2, (pool) => _nearMissSoundPool = pool),
-      _createSoundPool('low_timer.wav', 2, (pool) => _lowTimerSoundPool = pool),
-      _createSoundPool('fever.wav', 2, (pool) => _feverSoundPool = pool),
-      _createSoundPool(
-        'last_chance.wav',
-        1,
-        (pool) => _lastChanceSoundPool = pool,
-      ),
-    ]);
+    unawaited(_setupAudio());
     await Future<void>.delayed(Duration.zero);
     resetGame();
+  }
+
+  Future<void> _setupAudio() async {
+    try {
+      await Future.wait<void>([
+        _createSoundPlayers('move.wav', _moveSoundPlayers, 4),
+        _createSoundPlayers('timer_refill.wav', _timerRefillSoundPlayers, 4),
+        _createSoundPlayers('combo_break.wav', _comboBreakSoundPlayers, 3),
+        _createSoundPlayers('tick.wav', _tickSoundPlayers, 2),
+        _createSoundPool('combo.wav', 3, (pool) => _comboSoundPool = pool),
+        _createSoundPool(
+          'combo_milestone.wav',
+          3,
+          (pool) => _comboMilestoneSoundPool = pool,
+        ),
+        _createSoundPool('bonus.wav', 3, (pool) => _bonusSoundPool = pool),
+        _createSoundPool(
+          'near_miss.wav',
+          2,
+          (pool) => _nearMissSoundPool = pool,
+        ),
+        _createSoundPool(
+          'low_timer.wav',
+          2,
+          (pool) => _lowTimerSoundPool = pool,
+        ),
+        _createSoundPool('fever.wav', 2, (pool) => _feverSoundPool = pool),
+        _createSoundPool(
+          'last_chance.wav',
+          1,
+          (pool) => _lastChanceSoundPool = pool,
+        ),
+      ]).timeout(const Duration(seconds: 4));
+    } catch (_) {
+      // Android can occasionally stall or reject raw WAV decoder setup.
+      // Gameplay must not wait for optional sound warmup.
+    }
   }
 
   @override

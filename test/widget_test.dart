@@ -28,5 +28,7 @@ void main() {
     expect(find.text('Terms of Service'), findsOneWidget);
     expect(find.text('Privacy Policy'), findsOneWidget);
     expect(find.text('Contact Us'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 3));
   });
 }
