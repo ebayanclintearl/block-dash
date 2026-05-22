@@ -9,9 +9,10 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(BlockDashApp(prefs: prefs));
+    await tester.pump(const Duration(milliseconds: 1200));
+    await tester.pumpAndSettle();
 
-    expect(find.text('BLOCK'), findsWidgets);
-    expect(find.text('DASH'), findsWidgets);
+    expect(find.bySemanticsLabel('Block Dash logo'), findsOneWidget);
     expect(find.text('PLAY'), findsOneWidget);
     expect(find.text('RATE US'), findsOneWidget);
     expect(find.text('SETTINGS'), findsNothing);

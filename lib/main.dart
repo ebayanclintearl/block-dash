@@ -36,7 +36,7 @@ class BlockDashApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: HomeScreen(prefs: prefs),
+      home: SplashScreen(prefs: prefs),
     );
   }
 }
@@ -54,15 +54,15 @@ class BlockDashColors {
   static const yellow = Color(0xFFFFD600);
   static const orange = Color(0xFFFF9800);
   static const red = Color(0xFFEF3030);
-  static const green = Color(0xFF43C447);
+  static const green = Color(0xFF27A83A);
   static const purple = Color(0xFF9C3FD8);
   static const blockCyan = Color(0xFF14C8F0);
   static const blockRed = Color(0xFFEF3030);
-  static const blockGreen = Color(0xFF30C050);
+  static const blockGreen = Color(0xFF22A83A);
   static const blockYellow = Color(0xFFFFCC00);
   static const blockPurple = Color(0xFF9B3FE0);
   static const blockOrange = Color(0xFFFF7030);
-  static const blockBlue = Color(0xFF2080FF);
+  static const blockBlue = Color(0xFF0873F6);
   static const blockPink = Color(0xFFFF2D8D);
   static const shadow18 = Color(0x2D000000);
   static const shadow28 = Color(0x47000000);
@@ -70,13 +70,7 @@ class BlockDashColors {
   static const white12 = Color(0x1FFFFFFF);
   static const white30 = Color(0x4DFFFFFF);
   static const white55 = Color(0x8CFFFFFF);
-  static const List<Color> runAccentPalette = [
-    blockBlue,
-    blockGreen,
-    blockOrange,
-    blockPurple,
-    blockPink,
-  ];
+  static const List<Color> runAccentPalette = [blockBlue];
 }
 
 class BlockDashSpacing {
@@ -142,12 +136,74 @@ const _blockDashAudioFiles = [
   'last_chance.wav',
 ];
 
+const _blockDashLogoAsset = 'assets/images/block_dash_logo.png';
+
 Future<void>? _blockDashAudioPreloadFuture;
 
 Future<void> _preloadBlockDashAudio() {
   return _blockDashAudioPreloadFuture ??= FlameAudio.audioCache.loadAll(
     _blockDashAudioFiles,
   );
+}
+
+// ─── Splash Screen ────────────────────────────────────────────────────────────
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key, required this.prefs});
+
+  final SharedPreferences prefs;
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    )..forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _finishStartup());
+  }
+
+  Future<void> _finishStartup() async {
+    unawaited(_preloadBlockDashAudio());
+    unawaited(precacheImage(const AssetImage(_blockDashLogoAsset), context));
+    await Future<void>.delayed(const Duration(milliseconds: 950));
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      _instantRoute<void>((_) => HomeScreen(prefs: widget.prefs)),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _BlueScaffold(
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (_, child) {
+            final curved = Curves.easeOutBack.transform(_controller.value);
+            return Opacity(
+              opacity: _controller.value.clamp(0.0, 1.0),
+              child: Transform.scale(scale: 0.86 + curved * 0.14, child: child),
+            );
+          },
+          child: const _BlockDashLogo(widthFactor: 0.82),
+        ),
+      ),
+    );
+  }
 }
 
 // ─── Home Screen ───────────────────────────────────────────────────────────────
@@ -183,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   const Spacer(flex: 2),
-                  const _BlockTitle(text: 'BLOCK\nDASH'),
+                  const _BlockDashLogo(widthFactor: 0.88),
                   const Spacer(flex: 2),
                   _BigButton(
                     label: 'PLAY',
@@ -206,9 +262,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   _BigButton(
                     label: 'RATE US',
                     icon: Icons.star_rate_rounded,
-                    color: const Color(0xFF2DBD44),
-                    accentColor: const Color(0xFF52E868),
-                    shadowColor: const Color(0xAA1A8830),
+                    color: BlockDashColors.blockGreen,
+                    accentColor: const Color(0xFF36D64F),
+                    shadowColor: const Color(0xAA126E26),
                     onPressed: () => _showRateUsDialog(context),
                   ),
                   const Spacer(),
@@ -888,103 +944,22 @@ class _BigButtonState extends State<_BigButton> {
   }
 }
 
-// ─── Block Title ───────────────────────────────────────────────────────────────
-class _BlockTitle extends StatelessWidget {
-  const _BlockTitle({required this.text});
+// ─── Block Dash Logo ───────────────────────────────────────────────────────────
+class _BlockDashLogo extends StatelessWidget {
+  const _BlockDashLogo({required this.widthFactor});
 
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final shortest = MediaQuery.sizeOf(context).shortestSide;
-    final fontSize = (shortest * 0.17).clamp(48.0, 84.0);
-    final lines = text.split('\n');
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _GlossyTitleLine(
-          text: lines.first,
-          fontSize: fontSize,
-          colors: const [Colors.white, Color(0xFFD9ECFF)],
-          strokeColor: const Color(0xFF7AA8F5),
-          baseShadowColor: const Color(0xCC04245F),
-        ),
-        Transform.translate(
-          offset: const Offset(0, -8),
-          child: _GlossyTitleLine(
-            text: lines.length > 1 ? lines[1] : '',
-            fontSize: fontSize,
-            colors: const [Color(0xFFFFF06A), Color(0xFFFFB800)],
-            strokeColor: const Color(0xFFE58B00),
-            baseShadowColor: const Color(0xCC4B2500),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GlossyTitleLine extends StatelessWidget {
-  const _GlossyTitleLine({
-    required this.text,
-    required this.fontSize,
-    required this.colors,
-    required this.strokeColor,
-    required this.baseShadowColor,
-  });
-
-  final String text;
-  final double fontSize;
-  final List<Color> colors;
-  final Color strokeColor;
-  final Color baseShadowColor;
+  final double widthFactor;
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = TextStyle(
-      height: 0.86,
-      fontSize: fontSize,
-      fontWeight: FontWeight.w900,
-      letterSpacing: 0,
-    );
-    final strokeStyle = textStyle.copyWith(
-      foreground: Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4
-        ..color = strokeColor,
-    );
-
+    final width = MediaQuery.sizeOf(context).width * widthFactor;
     return Semantics(
-      label: text,
-      child: ExcludeSemantics(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Transform.translate(
-                offset: const Offset(4, 4),
-                child: Text(
-                  text,
-                  style: textStyle.copyWith(color: baseShadowColor),
-                ),
-              ),
-              Text(text, style: strokeStyle),
-              ShaderMask(
-                blendMode: BlendMode.srcIn,
-                shaderCallback: (bounds) => LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: colors,
-                ).createShader(bounds),
-                child: Text(
-                  text,
-                  style: textStyle.copyWith(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-        ),
+      label: 'Block Dash logo',
+      child: Image.asset(
+        _blockDashLogoAsset,
+        width: width.clamp(240.0, 520.0),
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
       ),
     );
   }
@@ -1259,7 +1234,7 @@ class _GameLoadingViewState extends State<_GameLoadingView>
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const _BlockTitle(text: 'BLOCK\nDASH'),
+                        const _BlockDashLogo(widthFactor: 0.82),
                         const SizedBox(height: BlockDashSpacing.lg),
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1409,9 +1384,9 @@ class GameOverScreen extends StatelessWidget {
                 child: _BigButton(
                   label: 'HOME',
                   icon: Icons.home_rounded,
-                  color: const Color(0xFF2DBD44),
-                  accentColor: const Color(0xFF52E868),
-                  shadowColor: const Color(0xAA1A8830),
+                  color: BlockDashColors.blockGreen,
+                  accentColor: const Color(0xFF36D64F),
+                  shadowColor: const Color(0xAA126E26),
                   onPressed: () => Navigator.of(context).pushAndRemoveUntil(
                     _instantRoute<void>((_) => HomeScreen(prefs: prefs)),
                     (_) => false,
