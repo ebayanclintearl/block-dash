@@ -738,7 +738,7 @@ class _MiniBlock extends StatelessWidget {
 }
 
 // ─── Shared Big Button ─────────────────────────────────────────────────────────
-class _BigButton extends StatelessWidget {
+class _BigButton extends StatefulWidget {
   const _BigButton({
     required this.label,
     required this.icon,
@@ -758,125 +758,131 @@ class _BigButton extends StatelessWidget {
   final bool tall;
 
   @override
+  State<_BigButton> createState() => _BigButtonState();
+}
+
+class _BigButtonState extends State<_BigButton> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final h = tall ? 80.0 : 64.0;
+    final h = widget.tall ? 80.0 : 64.0;
     const depth = BlockDashSpacing.xs;
-    final darkColor = _scaleColor(color, 0.68);
+    final darkColor = _scaleColor(widget.color, 0.68);
 
     return SizedBox(
       width: double.infinity,
       height: h + depth,
-      child: Stack(
-        children: [
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: h,
-              decoration: BoxDecoration(
-                color: darkColor,
-                borderRadius: BorderRadius.circular(
-                  BlockDashSpacing.blockRadius,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SizedBox(
-              height: h,
-              child: Material(
-                color: Colors.transparent,
-                clipBehavior: Clip.antiAlias,
-                borderRadius: BorderRadius.circular(
-                  BlockDashSpacing.blockRadius,
-                ),
-                child: InkWell(
+      child: AnimatedScale(
+        scale: _pressed ? 0.985 : 1,
+        duration: const Duration(milliseconds: 90),
+        curve: Curves.easeOut,
+        child: Stack(
+          children: [
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: h,
+                decoration: BoxDecoration(
+                  color: darkColor,
                   borderRadius: BorderRadius.circular(
                     BlockDashSpacing.blockRadius,
                   ),
-                  onTap: onPressed,
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [accentColor, color],
-                      ),
-                      borderRadius: BorderRadius.circular(
-                        BlockDashSpacing.blockRadius,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: shadowColor,
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                ),
+              ),
+            ),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 90),
+              curve: Curves.easeOut,
+              top: _pressed ? depth * 0.65 : 0,
+              left: 0,
+              right: 0,
+              child: SizedBox(
+                height: h,
+                child: Material(
+                  color: Colors.transparent,
+                  clipBehavior: Clip.antiAlias,
+                  borderRadius: BorderRadius.circular(
+                    BlockDashSpacing.blockRadius,
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(
+                      BlockDashSpacing.blockRadius,
                     ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: BlockDashSpacing.xs,
-                          left: tall ? 48 : 40,
-                          right: tall ? 48 : 40,
-                          child: Container(
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: BlockDashColors.white30,
-                              borderRadius: BorderRadius.circular(
-                                BlockDashSpacing.blockRadius,
-                              ),
-                            ),
-                          ),
+                    splashColor: Colors.white.withValues(alpha: 0.08),
+                    highlightColor: Colors.white.withValues(alpha: 0.04),
+                    onTapDown: (_) => _setPressed(true),
+                    onTapUp: (_) => _setPressed(false),
+                    onTapCancel: () => _setPressed(false),
+                    onTap: widget.onPressed,
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [widget.accentColor, widget.color],
                         ),
-                        Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                icon,
-                                size: tall ? 32 : 24,
+                        borderRadius: BorderRadius.circular(
+                          BlockDashSpacing.blockRadius,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.shadowColor,
+                            blurRadius: _pressed ? 8 : 16,
+                            offset: Offset(0, _pressed ? 4 : 8),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              widget.icon,
+                              size: widget.tall ? 32 : 24,
+                              color: Colors.white,
+                              shadows: const [
+                                Shadow(
+                                  offset: Offset(0, 2),
+                                  blurRadius: 4,
+                                  color: Color(0x66000000),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: BlockDashSpacing.xs),
+                            Text(
+                              widget.label,
+                              style: TextStyle(
                                 color: Colors.white,
+                                fontSize: widget.tall ? 30 : 24,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
                                 shadows: const [
                                   Shadow(
-                                    offset: Offset(0, 2),
-                                    blurRadius: 4,
-                                    color: Color(0x66000000),
+                                    offset: Offset(0, 3),
+                                    blurRadius: 5,
+                                    color: Color(0x77000000),
                                   ),
                                 ],
                               ),
-                              const SizedBox(width: BlockDashSpacing.xs),
-                              Text(
-                                label,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: tall ? 30 : 24,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
-                                  shadows: const [
-                                    Shadow(
-                                      offset: Offset(0, 3),
-                                      blurRadius: 5,
-                                      color: Color(0x77000000),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1358,46 +1364,58 @@ class GameOverScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(),
-              Text(
-                'Game Over',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.w900,
-                  color: BlockDashColors.blockRed,
-                  shadows: const [
-                    Shadow(
-                      offset: Offset(0, 4),
-                      blurRadius: 0,
-                      color: Color(0x88000E6A),
-                    ),
-                  ],
+              const _GameOverReveal(
+                delay: Duration.zero,
+                child: Text(
+                  'Game Over',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 4),
+                        blurRadius: 0,
+                        color: Color(0x88000E6A),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const Spacer(),
-              _ScorePanel(result: result),
+              _GameOverReveal(
+                delay: const Duration(milliseconds: 100),
+                child: _ScorePanel(result: result),
+              ),
               const Spacer(),
-              _BigButton(
-                label: 'PLAY AGAIN',
-                icon: Icons.replay_rounded,
-                color: const Color(0xFFFF8C00),
-                accentColor: const Color(0xFFFFD000),
-                shadowColor: const Color(0xAAFF6000),
-                tall: true,
-                onPressed: () => Navigator.of(context).pushReplacement(
-                  _instantRoute<void>((_) => GameScreen(prefs: prefs)),
+              _GameOverReveal(
+                delay: const Duration(milliseconds: 210),
+                child: _BigButton(
+                  label: 'PLAY AGAIN',
+                  icon: Icons.replay_rounded,
+                  color: const Color(0xFFFF8C00),
+                  accentColor: const Color(0xFFFFD000),
+                  shadowColor: const Color(0xAAFF6000),
+                  tall: true,
+                  onPressed: () => Navigator.of(context).pushReplacement(
+                    _instantRoute<void>((_) => GameScreen(prefs: prefs)),
+                  ),
                 ),
               ),
               const SizedBox(height: BlockDashSpacing.sm),
-              _BigButton(
-                label: 'HOME',
-                icon: Icons.home_rounded,
-                color: const Color(0xFF2DBD44),
-                accentColor: const Color(0xFF52E868),
-                shadowColor: const Color(0xAA1A8830),
-                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                  _instantRoute<void>((_) => HomeScreen(prefs: prefs)),
-                  (_) => false,
+              _GameOverReveal(
+                delay: const Duration(milliseconds: 290),
+                child: _BigButton(
+                  label: 'HOME',
+                  icon: Icons.home_rounded,
+                  color: const Color(0xFF2DBD44),
+                  accentColor: const Color(0xFF52E868),
+                  shadowColor: const Color(0xAA1A8830),
+                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                    _instantRoute<void>((_) => HomeScreen(prefs: prefs)),
+                    (_) => false,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -1439,8 +1457,9 @@ class _ScorePanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: BlockDashSpacing.xs),
-          Text(
-            '${result.score}',
+          _AnimatedScoreNumber(
+            value: result.score,
+            duration: const Duration(milliseconds: 650),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 72,
@@ -1462,8 +1481,9 @@ class _ScorePanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: BlockDashSpacing.xs),
-          Text(
-            '${result.bestScore}',
+          _AnimatedScoreNumber(
+            value: result.bestScore,
+            duration: const Duration(milliseconds: 760),
             style: const TextStyle(
               color: BlockDashColors.yellow,
               fontSize: 48,
@@ -1474,25 +1494,32 @@ class _ScorePanel extends StatelessWidget {
           ),
           if (result.isNewBest) ...[
             const SizedBox(height: BlockDashSpacing.sm),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: BlockDashSpacing.sm,
-                vertical: BlockDashSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFFE564), BlockDashColors.orange],
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.8, end: 1),
+              duration: const Duration(milliseconds: 420),
+              curve: Curves.elasticOut,
+              builder: (_, scale, child) =>
+                  Transform.scale(scale: scale, child: child),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: BlockDashSpacing.sm,
+                  vertical: BlockDashSpacing.xs,
                 ),
-                borderRadius: BorderRadius.circular(
-                  BlockDashSpacing.blockRadius,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFE564), BlockDashColors.orange],
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    BlockDashSpacing.blockRadius,
+                  ),
                 ),
-              ),
-              child: const Text(
-                'NEW HIGH SCORE!',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
+                child: const Text(
+                  'NEW HIGH SCORE!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),
@@ -1510,6 +1537,67 @@ class _ScorePanel extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _GameOverReveal extends StatelessWidget {
+  const _GameOverReveal({required this.child, required this.delay});
+
+  final Widget child;
+  final Duration delay;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: Duration(milliseconds: 360 + delay.inMilliseconds),
+      curve: Curves.easeOutCubic,
+      builder: (_, value, child) {
+        final start = (delay.inMilliseconds / (360 + delay.inMilliseconds))
+            .clamp(0.0, 0.75);
+        final t = value <= start ? 0.0 : ((value - start) / (1 - start));
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 18),
+            child: Transform.scale(scale: 0.96 + t * 0.04, child: child),
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+class _AnimatedScoreNumber extends StatelessWidget {
+  const _AnimatedScoreNumber({
+    required this.value,
+    required this.style,
+    required this.duration,
+  });
+
+  final int value;
+  final TextStyle style;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: value.toDouble()),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (_, animatedValue, _) {
+        return Transform.scale(
+          scale:
+              1 + (1 - (animatedValue / math.max(value, 1)).clamp(0, 1)) * 0.08,
+          child: Text(
+            animatedValue.round().toString(),
+            textAlign: TextAlign.center,
+            style: style,
+          ),
+        );
+      },
     );
   }
 }
